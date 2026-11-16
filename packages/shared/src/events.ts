@@ -17,6 +17,7 @@ export const agentEventSchema = z.discriminatedUnion("type", [
     agentId: id,
     name: z.string().min(1).max(120),
     parentToolId: id.optional(),
+    model: z.string().max(120).optional(),
   }),
   z.object({ type: z.literal("agent.stopped"), ...base, agentId: id }),
   z.object({
@@ -28,6 +29,14 @@ export const agentEventSchema = z.discriminatedUnion("type", [
     summary: z.string().max(200).optional(),
   }),
   z.object({ type: z.literal("tool.finished"), ...base, toolId: id, ok: z.boolean() }),
+  z.object({
+    type: z.literal("message"),
+    ...base,
+    agentId: id,
+    role: z.enum(["user", "assistant"]),
+    text: z.string().min(1).max(1000),
+    model: z.string().max(120).optional(),
+  }),
 ]);
 
 export const ingestSchema = z.union([agentEventSchema, z.array(agentEventSchema).min(1).max(1000)]);

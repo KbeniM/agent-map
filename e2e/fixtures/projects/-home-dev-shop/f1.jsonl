@@ -1,4 +1,5 @@
 {"type":"user","timestamp":"2026-11-16T10:00:00.000Z","cwd":"/home/dev/shop","sessionId":"f1","message":{"role":"user","content":"Add a checkout page"}}
+{"type":"assistant","timestamp":"2026-11-16T10:00:01.000Z","sessionId":"f1","message":{"role":"assistant","model":"claude-opus-5-5","content":[{"type":"text","text":"Reading the cart first."}]}}
 {"type":"assistant","timestamp":"2026-11-16T10:00:02.000Z","sessionId":"f1","message":{"role":"assistant","content":[{"type":"tool_use","id":"t-read","name":"Read","input":{"file_path":"src/cart.ts"}}]}}
 {"type":"user","timestamp":"2026-11-16T10:00:03.000Z","sessionId":"f1","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t-read","content":"..."}]}}
 {"type":"assistant","timestamp":"2026-11-16T10:00:04.000Z","sessionId":"f1","message":{"role":"assistant","content":[{"type":"tool_use","id":"t-spawn","name":"Agent","input":{"description":"Find payment code","subagent_type":"scout"}}]}}

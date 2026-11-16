@@ -1,19 +1,21 @@
 import { nodeId } from "@agent-map/shared/layout";
+import { providerOf } from "@agent-map/shared/providers";
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { useMemo } from "react";
 import { sessionColour } from "@/components/graph/colour";
+import { ProviderIcon } from "@/components/icons";
 import { Panel } from "@/components/panel";
 import { ago, useNow } from "@/lib/time";
-import { useBridge } from "@/stores/bridge";
 import { useGraph } from "@/stores/graph";
+import { usePreferences } from "@/stores/preferences";
 
 const LIVE_MS = 30_000;
 
 export function SessionsPanel({ selected }: { selected?: string }) {
   const graph = useGraph((state) => state.graph);
   const connection = useGraph((state) => state.connection);
-  const url = useBridge((state) => state.url);
+  const url = usePreferences((state) => state.url);
   const now = useNow(5000);
 
   const sessions = useMemo(() => {
@@ -21,7 +23,12 @@ export function SessionsPanel({ selected }: { selected?: string }) {
     return Object.values(graph.sessions)
       .map((session) => {
         const own = agents.filter((agent) => agent.sessionId === session.id);
-        return { ...session, agents: own.length - 1, tools: own.reduce((sum, agent) => sum + agent.toolIds.length, 0) };
+        return {
+          ...session,
+          provider: providerOf(graph.agents[session.id]?.model, session.harness),
+          agents: own.length - 1,
+          tools: own.reduce((sum, agent) => sum + agent.toolIds.length, 0),
+        };
       })
       .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
   }, [graph]);
@@ -64,14 +71,15 @@ export function SessionsPanel({ selected }: { selected?: string }) {
                     )}
                   >
                     <span className="flex items-center gap-2">
+                      <ProviderIcon provider={session.provider} />
+                      <span className="type-body truncate font-medium">{session.title}</span>
                       <span
                         aria-hidden
-                        className="size-2 shrink-0 rounded-full"
+                        className="ml-auto size-1.5 shrink-0 rounded-full"
                         style={{ background: sessionColour(session.id) }}
                       />
-                      <span className="type-body truncate font-medium">{session.title}</span>
                     </span>
-                    <span className="type-caption pl-4 text-muted-foreground">
+                    <span className="type-caption pl-6 text-muted-foreground">
                       {session.agents > 0 && `${session.agents} ${session.agents === 1 ? "subagent" : "subagents"} · `}
                       {session.tools} tools ·{" "}
                       {live ? <span className="text-live">now</span> : `${ago(session.lastAt, now)} ago`}

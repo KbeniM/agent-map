@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Panel } from "@/components/panel";
 import { Input } from "@/components/ui/input";
 import { bridge, unwrap } from "@/lib/api";
-import { useBridge } from "@/stores/bridge";
+import { usePreferences } from "@/stores/preferences";
 
 export const Route = createFileRoute("/connect")({ component: Connect });
 
@@ -17,7 +17,7 @@ const sample = (url: string) => `curl -X POST ${url}/v1/events \\
        "at":"${new Date().toISOString().slice(0, 19)}Z"}'`;
 
 function Connect() {
-  const { url, setUrl } = useBridge();
+  const { url, setUrl } = usePreferences();
   const harnesses = useQuery({
     queryKey: ["harnesses", url],
     queryFn: () => unwrap(bridge(url).v1.harnesses.$get()),

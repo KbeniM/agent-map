@@ -1,14 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { BRIDGE } from "../playwright.config";
 
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
-});
-
 test("lists a Claude Code session from its transcript, with its subagent", async ({ page }) => {
   await page.goto("/");
   const sessions = page.getByRole("region", { name: "Sessions" });
-  await expect(sessions.getByRole("link", { name: /Add a checkout page/ })).toContainText("1 subagent · 4 tools");
+  await expect(sessions.getByRole("link", { name: /Add a checkout page/ })).toContainText("1 subagent · 5 tools");
   await expect(page.locator("canvas")).toBeVisible();
 });
 
@@ -20,9 +16,13 @@ test("selecting a session shows its subagent and tool calls", async ({ page }) =
   await expect(details.getByRole("link", { name: /scout/ })).toBeVisible();
   await expect(details.getByText("Run the tests")).toBeVisible();
 
+  await expect(details.getByText("Reading the cart first.")).toBeVisible();
+
   await details.getByRole("link", { name: /scout/ }).click();
   await expect(details.getByRole("heading", { name: "scout" })).toBeVisible();
   await expect(details.getByText("stripe")).toBeVisible();
+  await expect(details.getByText("Find payment code").first()).toBeVisible();
+  await expect(details.getByText("Payments live in src/pay.ts")).toBeVisible();
 });
 
 test("a pushed event from any harness appears live", async ({ page, request }) => {
@@ -46,4 +46,29 @@ test("connect lists the harnesses the bridge reads", async ({ page }) => {
   await expect(panel.getByText("Claude Code")).toBeVisible();
   await expect(panel.getByText("e2e/fixtures/projects")).toBeVisible();
   await expect(panel.getByText("Any harness")).toBeVisible();
+});
+
+test("the theme follows the system until the toggle picks one", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  const html = page.locator("html");
+  await expect(html).toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Theme: System" }).click();
+  await expect(html).not.toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Theme: Light" }).click();
+  await expect(html).toHaveClass(/dark/);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Theme: Dark" })).toBeVisible();
+  await expect(html).toHaveClass(/dark/);
+});
+
+test("the map switches between 3D and 2D and remembers it", async ({ page }) => {
+  await page.goto("/");
+  const view = page.getByRole("group", { name: "View" });
+  await expect(view.getByRole("button", { name: "3d" })).toHaveAttribute("aria-pressed", "true");
+  await view.getByRole("button", { name: "2d" }).click();
+  await expect(view.getByRole("button", { name: "2d" })).toHaveAttribute("aria-pressed", "true");
+  await page.reload();
+  await expect(view.getByRole("button", { name: "2d" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("canvas")).toBeVisible();
 });

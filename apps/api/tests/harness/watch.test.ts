@@ -56,8 +56,14 @@ describe("watchClaudeCode", () => {
       expect(events.filter((event) => event.type === "session.started")).toHaveLength(1);
     });
 
-    expect(events.map((event) => event.type)).toEqual(["session.started", "tool.started", "agent.started"]);
-    expect(events[2]).toMatchObject({ agentId: "a1", name: "scout", parentToolId: "spawn" });
+    expect(events.map((event) => event.type)).toEqual([
+      "session.started",
+      "message",
+      "tool.started",
+      "agent.started",
+      "message",
+    ]);
+    expect(events[3]).toMatchObject({ agentId: "a1", name: "scout", parentToolId: "spawn" });
   });
 
   test("skips transcripts older than the replay window", async () => {

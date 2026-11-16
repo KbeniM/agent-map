@@ -36,9 +36,12 @@ agent-map/
 | Event | Meaning |
 | --- | --- |
 | `session.started` | A harness run began. Carries the harness name, a title and the working directory. |
-| `agent.started` | An agent joined a session. `parentToolId` names the tool call that spawned it. |
+| `agent.started` | An agent joined a session. `parentToolId` names the tool call that spawned it; `model` is optional. |
 | `agent.stopped` | An agent finished. A subagent also stops when its spawning tool call finishes. |
 | `tool.started` / `tool.finished` | A tool call began; it ended, successfully or not. |
+| `message` | A prompt (`user`) or reply (`assistant`) of an agent, with the model that wrote a reply. A subagent's first prompt is its task; its last reply is its answer. |
+
+The model of an agent's latest reply decides its provider (`packages/shared/src/providers.ts`), falling back to the harness.
 
 The main agent of a session has the session's id. An event for an unknown session or agent creates it, so a harness that only reports tool calls still draws a tree.
 

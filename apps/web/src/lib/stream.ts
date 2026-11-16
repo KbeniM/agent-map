@@ -1,10 +1,10 @@
 import { type AgentEvent, agentEventSchema } from "@agent-map/shared/events";
 import { useEffect } from "react";
-import { useBridge } from "@/stores/bridge";
 import { useGraph } from "@/stores/graph";
+import { usePreferences } from "@/stores/preferences";
 
 export function useBridgeStream() {
-  const url = useBridge((state) => state.url);
+  const url = usePreferences((state) => state.url);
 
   useEffect(() => {
     const { receive, reset, setConnection } = useGraph.getState();

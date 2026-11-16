@@ -11,7 +11,7 @@
 
 - **Live map state** is in Zustand (`stores/graph.ts`), fed by the SSE stream in `lib/stream.ts`. Events are batched per animation frame before they reach the store.
 - **Request/response data** from the bridge (`/v1/harnesses`) goes through `@tanstack/react-query`.
-- **Preferences** (the bridge URL) persist through Zustand `persist`.
+- **Preferences** (bridge URL, theme, 2D/3D view) persist through Zustand `persist` under `agent-map-preferences`; `index.html` reads the same key for the theme before first paint.
 
 ## 3. Bridge calls
 

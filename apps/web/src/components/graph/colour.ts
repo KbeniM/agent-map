@@ -4,6 +4,7 @@ function sessionHue(sessionId: string) {
   return hash % 360;
 }
 
-export const sessionColour = (sessionId: string, lightness = 66) => `hsl(${sessionHue(sessionId)}, 70%, ${lightness}%)`;
+export const sessionColour = (sessionId: string, lightness = "66%") =>
+  `hsl(${sessionHue(sessionId)}, 70%, ${lightness})`;
 
 export const token = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();

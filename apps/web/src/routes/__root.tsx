@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Link, Outlet, useNavigate, useSearch } from "@tanstack/react-router";
 import { AgentGraph } from "@/components/graph/agent-graph";
+import { MapControls } from "@/components/map-controls";
 import { useBridgeStream } from "@/lib/stream";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({ component: Root });
@@ -24,6 +25,7 @@ function Root() {
           Connect
         </Link>
       </header>
+      <MapControls />
       <Outlet />
     </main>
   );

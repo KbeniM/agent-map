@@ -32,6 +32,19 @@ describe("apply", () => {
     expect(applyAll(emptyGraph(), run).agents.a1.stoppedAt).toBe(at(5));
   });
 
+  test("keeps the model an agent started with until a reply names another", () => {
+    const started: AgentEvent = { ...run[2], model: "gpt-5" } as AgentEvent;
+    const reply: AgentEvent = {
+      type: "message",
+      sessionId: "s1",
+      agentId: "a1",
+      role: "assistant",
+      text: "ok",
+      at: at(3),
+    };
+    expect(applyAll(emptyGraph(), [started, reply]).agents.a1.model).toBe("gpt-5");
+  });
+
   test("creates the session for a harness that only reports tools", () => {
     const graph = applyAll(emptyGraph(), [run[3]]);
     expect(graph.sessions.s1.harness).toBe("unknown");
@@ -43,6 +56,24 @@ describe("apply", () => {
       { type: "tool.finished", sessionId: "s1", toolId: "x", ok: true, at: at(1) },
     ]);
     expect(graph.tools).toEqual({});
+  });
+
+  test("keeps the first message and the latest ones per agent", () => {
+    const messages = Array.from(
+      { length: 40 },
+      (_, i): AgentEvent => ({
+        type: "message",
+        sessionId: "s1",
+        agentId: "s1",
+        role: "assistant",
+        text: `m${i}`,
+        at: at(i % 60),
+      }),
+    );
+    const kept = applyAll(emptyGraph(), messages).agents.s1.messages.map((message) => message.text);
+    expect(kept).toHaveLength(30);
+    expect(kept[0]).toBe("m0");
+    expect(kept.at(-1)).toBe("m39");
   });
 
   test("does not mutate the previous graph", () => {

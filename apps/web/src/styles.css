@@ -35,10 +35,45 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* why: dark mode only, so the shadcn light palette is not kept */
+/* why: three.js parses only hex, rgb and hsl colours, so the graph tokens avoid oklch */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   --radius: 0.625rem;
+  --background: oklch(0.975 0.002 260);
+  --foreground: oklch(0.2 0.005 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.005 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.005 260);
+  --primary: oklch(0.22 0.005 260);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.94 0.003 260);
+  --secondary-foreground: oklch(0.2 0.005 260);
+  --muted: oklch(0.94 0.003 260);
+  --muted-foreground: oklch(0.5 0.01 260);
+  --accent: oklch(0.94 0.003 260);
+  --accent-foreground: oklch(0.2 0.005 260);
+  --destructive: oklch(0.58 0.21 25);
+  --live: oklch(0.6 0.15 160);
+  --border: oklch(0 0 0 / 8%);
+  --input: oklch(0 0 0 / 10%);
+  --ring: oklch(0.6 0 0);
+  --glass-edge: oklch(1 0 0 / 70%);
+  --glass-shadow: oklch(0.3 0.02 260 / 12%);
+
+  --graph-background: hsl(220, 20%, 97%);
+  --graph-link: hsl(220, 10%, 62%);
+  --graph-tool: hsl(220, 8%, 60%);
+  --graph-tool-error: hsl(4, 75%, 55%);
+  --graph-particle: hsl(160, 65%, 38%);
+  --graph-message: hsl(215, 85%, 52%);
+  --graph-label: hsl(220, 15%, 20%);
+  --graph-label-muted: hsl(220, 8%, 45%);
+  --graph-sphere-lightness: 52%;
+}
+
+.dark {
+  color-scheme: dark;
   --background: oklch(0.13 0 0);
   --foreground: oklch(0.97 0 0);
   --card: oklch(0.19 0 0);
@@ -58,13 +93,18 @@
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.55 0 0);
+  --glass-edge: oklch(1 0 0 / 6%);
+  --glass-shadow: oklch(0 0 0 / 40%);
 
-  /* why: three.js parses only hex, rgb and hsl colours, so the graph tokens avoid oklch */
   --graph-background: hsl(0, 0%, 6%);
-  --graph-link: hsl(0, 0%, 32%);
+  --graph-link: hsl(0, 0%, 36%);
   --graph-tool: hsl(0, 0%, 55%);
   --graph-tool-error: hsl(4, 80%, 64%);
-  --graph-particle: hsl(160, 70%, 70%);
+  --graph-particle: hsl(160, 70%, 62%);
+  --graph-message: hsl(210, 90%, 66%);
+  --graph-label: hsl(0, 0%, 94%);
+  --graph-label-muted: hsl(0, 0%, 62%);
+  --graph-sphere-lightness: 66%;
 }
 
 @utility type-title {
@@ -96,8 +136,9 @@
   background: color-mix(in oklch, var(--card) 72%, transparent);
   backdrop-filter: blur(20px) saturate(160%);
   box-shadow:
-    inset 0 1px 0 oklch(1 0 0 / 6%),
-    0 8px 32px oklch(0 0 0 / 40%);
+    inset 0 1px 0 var(--glass-edge),
+    0 0 0 1px var(--border),
+    0 8px 32px var(--glass-shadow);
 }
 
 @media (prefers-reduced-transparency: reduce) {
@@ -122,6 +163,13 @@
   }
   html {
     @apply font-sans antialiased;
+  }
+  html,
+  body,
+  .glass {
+    transition:
+      background-color 300ms ease,
+      color 300ms ease;
   }
   body {
     @apply bg-background text-foreground overscroll-none;

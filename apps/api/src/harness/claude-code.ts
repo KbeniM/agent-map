@@ -14,7 +14,7 @@ type Line = {
   timestamp?: string;
   cwd?: string;
   isMeta?: boolean;
-  message?: { content?: string | Block[] };
+  message?: { content?: string | Block[]; model?: string };
 };
 
 export type Cursor = { sessionId: string; agentId: string; started: boolean };
@@ -46,6 +46,25 @@ function opening(line: Line, cursor: Cursor, at: string): AgentEvent[] {
   ];
 }
 
+const MESSAGE_MAX = 1000;
+const HANDBACK = "SubagentHandback";
+
+function message(line: Line, { sessionId, agentId }: Cursor, at: string): AgentEvent[] {
+  const content = line.message?.content;
+  const blocks = typeof content === "string" ? [{ type: "text", text: content }] : (content ?? []);
+  const role = line.type === "assistant" ? "assistant" : "user";
+  const handback = blocks.find((block) => block.name === HANDBACK)?.input?.message;
+  const texts = blocks.filter((block) => block.type === "text").map((block) => block.text ?? "");
+  // why: system reminders and command echoes arrive as user text wrapped in tags, they are not messages
+  const text = [...texts, typeof handback === "string" ? handback : ""]
+    .filter((value) => value.trim() && !value.startsWith("<"))
+    .join("\n")
+    .trim();
+  if (line.isMeta || !text) return [];
+  const model = role === "assistant" ? line.message?.model : undefined;
+  return [{ type: "message", sessionId, at, agentId, role, text: text.slice(0, MESSAGE_MAX), model }];
+}
+
 function blockEvent(block: Block, { sessionId, agentId }: Cursor, at: string): AgentEvent | undefined {
   if (block.type === "tool_use" && block.id && block.name) {
     return {
@@ -75,7 +94,7 @@ export function parseLine(raw: string, cursor: Cursor): AgentEvent[] {
   const content = line.message?.content;
   const blocks = Array.isArray(content) ? content : [];
   const tools = blocks.map((block) => blockEvent(block, cursor, at)).filter((event) => event !== undefined);
-  return [...opening(line, cursor, at), ...tools];
+  return [...opening(line, cursor, at), ...message(line, cursor, at), ...tools];
 }
 
 export type SubagentMeta = { agentType?: string; description?: string; toolUseId?: string };

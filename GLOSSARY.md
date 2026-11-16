@@ -32,6 +32,14 @@ _Avoid_: Root agent, parent agent, orchestrator
 An agent spawned by a tool call of another agent in the same session.
 _Avoid_: Child agent, worker, sidechain
 
+**Provider**:
+The company whose model an agent runs on, such as Anthropic or OpenAI. Shown as its logo.
+_Avoid_: Vendor, model, LLM
+
+**Message**:
+A prompt to an agent or a reply from it. A subagent's first message is its task, its last reply its answer.
+_Avoid_: Chat, turn, text
+
 **Tool call**:
 One use of a tool by an agent, from start to result.
 _Avoid_: Action, step, invocation
