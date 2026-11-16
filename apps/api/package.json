@@ -1,0 +1,22 @@
+{
+  "name": "@agent-map/api",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/app.ts"
+  },
+  "scripts": {
+    "dev": "bun --env-file=../../.env --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "biome check .",
+    "format": "biome check --write .",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@agent-map/shared": "workspace:*",
+    "@hono/zod-validator": "0.9.1",
+    "hono": "4.13.19",
+    "zod": "4.6.7"
+  }
+}

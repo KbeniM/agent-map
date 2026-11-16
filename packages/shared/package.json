@@ -1,0 +1,17 @@
+{
+  "name": "@agent-map/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "check": "biome check .",
+    "format": "biome check --write .",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}

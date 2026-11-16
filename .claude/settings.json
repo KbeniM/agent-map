@@ -1,0 +1,34 @@
+{
+  "model": "opusplan",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit.ts\""
+          }
+        ]
+      }
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    },
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ponytail@ponytail": true,
+    "mattpocock-skills@mattpocock": true
+  }
+}
