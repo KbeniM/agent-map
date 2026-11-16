@@ -13,8 +13,8 @@
         root.classList.toggle("dark", dark);
         root.dataset.colorMode = dark ? "dark" : "light";
         const high = matchMedia("(prefers-contrast: more)").matches ? "_high_contrast" : "";
-        root.dataset.lightTheme = "light" + high;
-        root.dataset.darkTheme = "dark" + high;
+        root.dataset.lightTheme = `light${high}`;
+        root.dataset.darkTheme = `dark${high}`;
       } catch {}
     </script>
   </head>
