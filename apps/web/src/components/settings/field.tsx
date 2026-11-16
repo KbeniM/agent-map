@@ -15,7 +15,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col py-2">
-      <h3 className="type-micro pb-1 text-muted-foreground uppercase">{title}</h3>
+      <h3 className="type-title border-b pt-2 pb-2">{title}</h3>
       {children}
     </section>
   );

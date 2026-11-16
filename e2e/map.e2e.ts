@@ -100,7 +100,7 @@ test("a bridge with a wrong URL is reported and its form validates", async ({ pa
   await panel.getByLabel("Name").fill("Cloud");
   await panel.getByLabel("URL").fill("not a url");
   await panel.getByRole("button", { name: "Save" }).click();
-  await expect(panel.getByText("Use an http(s) URL")).toBeVisible();
+  await expect(panel.getByText("Enter a URL that starts with http:// or https://")).toBeVisible();
 });
 
 test("filters narrow the session list", async ({ page }) => {
@@ -108,7 +108,9 @@ test("filters narrow the session list", async ({ page }) => {
   const sessions = page.getByRole("region", { name: "Sessions" });
   await expect(sessions.getByRole("link", { name: /Add a checkout page/ })).toBeVisible();
   await sessions.getByLabel("Search sessions").fill("nothing like this");
-  await expect(sessions.getByText("No session matches the filters.")).toBeVisible();
+  await expect(sessions.getByText("No session matches these filters.")).toBeVisible();
+  await sessions.getByRole("button", { name: "Clear filters" }).click();
+  await expect(sessions.getByLabel("Search sessions")).toHaveValue("");
   await sessions.getByLabel("Search sessions").fill("checkout");
   await expect(sessions.getByRole("link", { name: /Add a checkout page/ })).toBeVisible();
 });
@@ -122,7 +124,7 @@ test("removing a session deletes it from the bridge", async ({ page, request }) 
   await page.getByRole("link", { name: /Throwaway run/ }).click();
   const details = page.getByRole("region", { name: "Details" });
   await details.getByRole("button", { name: "Remove session" }).click();
-  await details.getByRole("button", { name: "Remove", exact: true }).click();
+  await details.getByRole("button", { name: "Remove session" }).last().click();
   await expect(page.getByRole("link", { name: /Throwaway run/ })).toHaveCount(0);
 });
 

@@ -34,7 +34,7 @@ function ToolRow({ tool, now }: { tool: Tool; now: number }) {
       <ToolIcon name={tool.name} className={cn("mt-0.5", !tool.finishedAt && "text-live")} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="type-caption font-mono">{tool.name}</span>
-        {tool.summary && <span className="type-micro truncate text-muted-foreground">{tool.summary}</span>}
+        {tool.summary && <span className="type-caption break-words text-muted-foreground">{tool.summary}</span>}
       </span>
       <span
         className={cn(
@@ -53,7 +53,7 @@ function MessageRow({ message, from }: { message: Message; from: string }) {
   return (
     <li className="px-5 py-2">
       <span className="type-micro text-muted-foreground">{from}</span>
-      <p className="type-body line-clamp-4 whitespace-pre-line">{message.text}</p>
+      <p className="type-body wrap-anywhere whitespace-pre-line">{message.text}</p>
     </li>
   );
 }
@@ -86,16 +86,18 @@ function RemoveSession({ sessionId }: { sessionId: string }) {
     <div className="flex items-center gap-2 px-5 pt-2 pb-4">
       {confirming ? (
         <>
-          <span className="type-caption flex-1 text-muted-foreground">Remove its history from {bridge.name}?</span>
+          <span className="type-caption flex-1 text-muted-foreground">
+            Remove this session and its history from {bridge.name}? It cannot be restored.
+          </span>
           <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
-            Keep
+            Cancel
           </Button>
           <Button variant="destructive" size="sm" onClick={remove}>
-            Remove
+            Remove session
           </Button>
         </>
       ) : (
-        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setConfirming(true)}>
+        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setConfirming(true)}>
           Remove session
         </Button>
       )}
@@ -145,7 +147,7 @@ function AgentDetail({ graph, agent, now }: { graph: Graph; agent: Agent; now: n
               <Link
                 to="/"
                 search={{ node: nodeId.agent(child.id) }}
-                className="type-body flex items-center gap-2.5 px-5 py-1.5 hover:bg-secondary/60"
+                className="type-body mx-2 flex items-center gap-2.5 rounded-md px-3 py-1.5 hover:bg-[var(--button-invisible-bgColor-hover)]"
               >
                 <ProviderIcon provider={providerOf(child.model, session?.harness)} className="size-3.5" />
                 <span className="flex-1">{child.name}</span>
@@ -157,7 +159,7 @@ function AgentDetail({ graph, agent, now }: { graph: Graph; agent: Agent; now: n
           ))}
         </ul>
       )}
-      <h3 className="type-micro px-5 pt-2 pb-1 text-muted-foreground uppercase">Activity</h3>
+      <h3 className="type-micro border-t px-5 pt-3 pb-1 text-muted-foreground">Activity</h3>
       <ul className="pb-3">
         {entries
           .slice(0, 80)
@@ -194,8 +196,8 @@ export function NodePanel({ id }: { id: string }) {
           <ProviderIcon provider={provider} className="mt-0.5 size-5" />
         )}
         <div className="min-w-0 flex-1">
-          <h2 className="type-title truncate">{titleOf(graph, agent, tool)}</h2>
-          <p className="type-caption truncate text-muted-foreground">
+          <h2 className="type-title break-words text-balance">{titleOf(graph, agent, tool)}</h2>
+          <p className="type-caption break-words text-muted-foreground">
             {tool ? (tool.summary ?? agent.name) : subtitle(graph, agent)}
           </p>
         </div>

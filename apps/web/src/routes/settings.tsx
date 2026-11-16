@@ -52,7 +52,7 @@ function Settings() {
         onValueChange={(next) => navigate({ search: { tab: next as typeof tab }, replace: true })}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <TabsList className="mx-5 mt-4">
+        <TabsList className="px-3">
           <TabsTrigger value="harnesses">Harnesses</TabsTrigger>
           <TabsTrigger value="bridges">Bridges</TabsTrigger>
           <TabsTrigger value="display">Display</TabsTrigger>

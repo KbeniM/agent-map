@@ -35,8 +35,10 @@ export type AdapterInfo = {
 };
 
 export const bridgeConnectionSchema = z.object({
-  name: z.string().trim().min(1, "Name it").max(60),
-  url: z.url({ protocol: /^https?$/, message: "Use an http(s) URL" }).transform((url) => url.replace(/\/+$/, "")),
+  name: z.string().trim().min(1, "Enter a name for this bridge").max(60),
+  url: z
+    .url({ protocol: /^https?$/, message: "Enter a URL that starts with http:// or https://" })
+    .transform((url) => url.replace(/\/+$/, "")),
   token: z.string().trim().max(500),
 });
 

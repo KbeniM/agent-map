@@ -31,7 +31,7 @@ function BridgeForm({ bridge, onDone }: { bridge?: Bridge; onDone: () => void })
   const error = (name: keyof BridgeConnection) => form.formState.errors[name]?.message;
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl bg-secondary/50 p-3">
+    <form onSubmit={submit} className="my-2 flex flex-col gap-3 rounded-md border bg-canvas-muted p-3">
       {(["name", "url", "token"] as const).map((name) => (
         <div key={name} className="flex flex-col gap-1">
           <Label htmlFor={`bridge-${name}`} className="type-caption text-muted-foreground capitalize">
@@ -54,7 +54,7 @@ function BridgeForm({ bridge, onDone }: { bridge?: Bridge; onDone: () => void })
         <Button type="button" variant="ghost" size="sm" onClick={onDone}>
           Cancel
         </Button>
-        <Button type="submit" size="sm">
+        <Button type="submit" variant="primary" size="sm">
           Save
         </Button>
       </div>
@@ -113,7 +113,7 @@ export function BridgeSettings() {
       {adding ? (
         <BridgeForm onDone={() => setAdding(false)} />
       ) : (
-        <Button variant="outline" size="sm" className="mt-2 self-start" onClick={() => setAdding(true)}>
+        <Button size="sm" className="mt-2 self-start" onClick={() => setAdding(true)}>
           Add bridge
         </Button>
       )}

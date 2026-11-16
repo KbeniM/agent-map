@@ -1,49 +1,35 @@
-"use client";
-
 import { cn } from "cn";
 import { Slider as SliderPrimitive } from "radix-ui";
-import * as React from "react";
+import type * as React from "react";
 
 function Slider({
   className,
-  defaultValue,
   value,
-  min = 0,
-  max = 100,
+  defaultValue,
+  "aria-label": label,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root>) {
-  const _values = React.useMemo(
-    () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
-    [value, defaultValue, min, max],
-  );
-
+  const thumbs = (value ?? defaultValue ?? [0]).length;
   return (
     <SliderPrimitive.Root
       data-slot="slider"
-      defaultValue={defaultValue}
       value={value}
-      min={min}
-      max={max}
-      className={cn(
-        "relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
-        className,
-      )}
+      defaultValue={defaultValue}
+      className={cn("relative flex h-5 w-full touch-none items-center select-none data-disabled:opacity-50", className)}
       {...props}
     >
       <SliderPrimitive.Track
         data-slot="slider-track"
-        className="relative grow overflow-hidden rounded-4xl bg-muted data-horizontal:h-3 data-horizontal:w-full data-vertical:h-full data-vertical:w-3"
+        className="relative h-1 grow overflow-hidden rounded-full bg-track"
       >
-        <SliderPrimitive.Range
-          data-slot="slider-range"
-          className="absolute bg-primary select-none data-horizontal:h-full data-vertical:w-full"
-        />
+        <SliderPrimitive.Range data-slot="slider-range" className="absolute h-full bg-accent-emphasis" />
       </SliderPrimitive.Track>
-      {Array.from({ length: _values.length }, (_, index) => (
+      {Array.from({ length: thumbs }, (_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
-          className="block size-4 shrink-0 rounded-4xl border border-primary bg-white shadow-sm ring-ring/50 transition-colors select-none hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+          aria-label={label}
+          className="block size-4 rounded-full border border-[var(--fgColor-muted)] bg-knob pointer-coarse:size-6 shadow-[var(--shadow-resting-small)] transition-transform duration-[80ms] active:scale-110"
         />
       ))}
     </SliderPrimitive.Root>

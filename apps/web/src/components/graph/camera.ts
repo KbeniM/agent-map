@@ -8,6 +8,10 @@ export type Node = NodeObject<MapNode>;
 export type Link = LinkObject<MapNode, MapLink>;
 type GraphRef = RefObject<ForceGraphMethods<Node, Link> | undefined>;
 
+export const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// why: under reduced motion the camera cuts to its new position instead of gliding
+const glide = () => (reducedMotion() ? 0 : 900);
+
 // why: separate sessions share no links, so without a pull toward the centre they drift out of view
 function gravity(strength: number) {
   let nodes: Node[] = [];
@@ -42,7 +46,7 @@ export function useFirstFit(ref: GraphRef, hasNodes: boolean, selected: string |
     // why: live sessions keep the simulation warm, so the first fit waits for the layout to spread instead of engine stop
     const timer = setTimeout(() => {
       fitted.current = true;
-      ref.current?.zoomToFit(900, 80);
+      ref.current?.zoomToFit(glide(), 80);
     }, 1500);
     return () => clearTimeout(timer);
   }, [ref, hasNodes, selected]);
@@ -70,7 +74,7 @@ export function useFocus(
     const focusOn = () => {
       const node = nodes.get(selected);
       if (node?.x === undefined || node.y === undefined) return;
-      ref.current?.cameraPosition(cameraFor(node, view), { x: node.x, y: node.y, z: node.z ?? 0 }, 900);
+      ref.current?.cameraPosition(cameraFor(node, view), { x: node.x, y: node.y, z: node.z ?? 0 }, glide());
       // why: following starts once the 900 ms camera glide ends, or the two would fight over the target
       following.current = { id: selected, after: performance.now() + 950 };
     };
@@ -87,7 +91,7 @@ export function useFocus(
     const follow = following.current;
     const node = follow && performance.now() > follow.after ? nodes.get(follow.id) : undefined;
     const graph = ref.current;
-    if (node?.x === undefined || node.y === undefined || !graph) return;
+    if (node?.x === undefined || node.y === undefined || !graph || reducedMotion()) return;
     const target = (graph.controls() as TrackballControls).target;
     const camera = graph.camera().position;
     const step = { x: (node.x - target.x) * 0.12, y: (node.y - target.y) * 0.12, z: ((node.z ?? 0) - target.z) * 0.12 };
@@ -107,6 +111,6 @@ export function useViewSwitch(ref: GraphRef, view: View) {
     const distance = Math.max(box.x[1] - box.x[0], box.y[1] - box.y[0], 200) * 1.2;
     const camera =
       view === "2d" ? { ...center, z: distance } : { x: center.x + distance * 0.5, y: center.y, z: distance * 0.85 };
-    graph.cameraPosition(camera, center, 900);
+    graph.cameraPosition(camera, center, glide());
   }, [ref, view]);
 }

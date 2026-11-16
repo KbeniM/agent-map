@@ -6,7 +6,7 @@ import type { Object3D } from "three";
 import { useResolvedTheme } from "@/lib/theme";
 import { useVisibleGraph } from "@/lib/visible";
 import { type ColourBy, usePreferences } from "@/stores/preferences";
-import { type Link, type Node, useFirstFit, useFocus, useForces, useViewSwitch } from "./camera";
+import { type Link, type Node, reducedMotion, useFirstFit, useFocus, useForces, useViewSwitch } from "./camera";
 import { token } from "./colour";
 import { settle } from "./motion";
 import { dispose, linkObject, nodeObject, objectKey, RADIUS } from "./objects";
@@ -50,12 +50,13 @@ type Colours = Record<"link" | "particle" | "message" | "focus", string>;
 // why: subagent links carry messages and read as blue; tool links stay quiet until hovered or live
 function linkStyle(colours: Colours, touches: (link: Link) => boolean, particles: boolean) {
   const spawn = (link: Link) => link.type === "spawn";
+  const flowing = particles && !reducedMotion();
   return {
     linkColor: (link: Link) => (touches(link) ? colours.focus : spawn(link) ? colours.message : colours.link),
     linkWidth: (link: Link) => (touches(link) ? 0.6 : spawn(link) ? 0.5 : 0.25),
     linkDirectionalArrowLength: (link: Link) => (spawn(link) ? 3.5 : 2),
     linkDirectionalArrowColor: (link: Link) => (spawn(link) ? colours.message : colours.link),
-    linkDirectionalParticles: (link: Link) => (particles && link.live ? 3 : 0),
+    linkDirectionalParticles: (link: Link) => (flowing && link.live ? 3 : 0),
     linkDirectionalParticleWidth: (link: Link) => (spawn(link) ? 2 : 1.4),
     linkDirectionalParticleColor: (link: Link) => (spawn(link) ? colours.message : colours.particle),
   };

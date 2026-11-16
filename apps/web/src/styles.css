@@ -1,151 +1,103 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@fontsource-variable/mona-sans";
+@import "@primer/primitives/dist/css/base/size/size.css";
+@import "@primer/primitives/dist/css/base/typography/typography.css";
+@import "@primer/primitives/dist/css/base/motion/motion.css";
+@import "@primer/primitives/dist/css/functional/size/size.css";
+@import "@primer/primitives/dist/css/functional/size/radius.css";
+@import "@primer/primitives/dist/css/functional/size/border.css";
+@import "@primer/primitives/dist/css/functional/typography/typography.css";
+@import "@primer/primitives/dist/css/functional/themes/light.css";
+@import "@primer/primitives/dist/css/functional/themes/dark.css";
+@import "@primer/primitives/dist/css/functional/themes/light-high-contrast.css";
+@import "@primer/primitives/dist/css/functional/themes/dark-high-contrast.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/* why: Primer names the variable font "Mona Sans VF"; Fontsource registers the same file as "Mona Sans Variable" */
 @theme inline {
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
-  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", monospace;
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --color-live: var(--live);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --font-sans: "Mona Sans Variable", var(--fontStack-sansSerif);
+  --font-mono: var(--fontStack-monospace);
+  --color-background: var(--bgColor-default);
+  --color-foreground: var(--fgColor-default);
+  --color-card: var(--overlay-bgColor);
+  --color-card-foreground: var(--fgColor-default);
+  --color-popover: var(--overlay-bgColor);
+  --color-popover-foreground: var(--fgColor-default);
+  --color-primary: var(--button-primary-bgColor-rest);
+  --color-primary-foreground: var(--button-primary-fgColor-rest);
+  --color-secondary: var(--bgColor-neutral-muted);
+  --color-secondary-foreground: var(--fgColor-default);
+  --color-muted: var(--bgColor-muted);
+  --color-muted-foreground: var(--fgColor-muted);
+  --color-accent: var(--bgColor-neutral-muted);
+  --color-accent-foreground: var(--fgColor-default);
+  --color-destructive: var(--fgColor-danger);
+  --color-border: var(--borderColor-default);
+  --color-input: var(--control-borderColor-rest);
+  --color-ring: var(--focus-outlineColor);
+  --color-live: var(--fgColor-success);
+  --color-link: var(--fgColor-accent);
+  --color-control: var(--control-bgColor-rest);
+  --color-control-hover: var(--control-bgColor-hover);
+  --color-canvas-muted: var(--bgColor-muted);
+  --color-accent-emphasis: var(--bgColor-accent-emphasis);
+  --color-danger-emphasis: var(--bgColor-danger-emphasis);
+  --color-success-emphasis: var(--bgColor-success-emphasis);
+  --color-track: var(--controlTrack-bgColor-rest);
+  --color-knob: var(--controlKnob-bgColor-rest);
+  --color-underline-active: var(--underlineNav-borderColor-active);
+  --radius-sm: var(--borderRadius-small);
+  --radius-md: var(--borderRadius-medium);
+  --radius-lg: var(--borderRadius-medium);
+  --radius-xl: var(--borderRadius-large);
+  --radius-2xl: var(--borderRadius-large);
+  --radius-3xl: var(--borderRadius-large);
+  --radius-4xl: var(--borderRadius-medium);
+  --shadow-resting: var(--shadow-resting-small);
+  --shadow-floating: var(--shadow-floating-small);
 }
 
-/* why: three.js parses only hex, rgb and hsl colours, so the graph tokens avoid oklch */
+/* why: three.js parses only hex, rgb and hsl colours; every graph token resolves to an opaque Primer hex value */
 :root {
-  color-scheme: light;
-  --radius: 0.625rem;
-  --background: oklch(0.975 0.002 260);
-  --foreground: oklch(0.2 0.005 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.005 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.005 260);
-  --primary: oklch(0.22 0.005 260);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.94 0.003 260);
-  --secondary-foreground: oklch(0.2 0.005 260);
-  --muted: oklch(0.94 0.003 260);
-  --muted-foreground: oklch(0.5 0.01 260);
-  --accent: oklch(0.94 0.003 260);
-  --accent-foreground: oklch(0.2 0.005 260);
-  --destructive: oklch(0.58 0.21 25);
-  --live: oklch(0.6 0.15 160);
-  --border: oklch(0 0 0 / 8%);
-  --input: oklch(0 0 0 / 10%);
-  --ring: oklch(0.6 0 0);
-  --glass-edge: oklch(1 0 0 / 70%);
-  --glass-shadow: oklch(0.3 0.02 260 / 12%);
-
-  --graph-background: hsl(220, 20%, 97%);
-  --graph-link: hsl(220, 10%, 62%);
-  --graph-tool: hsl(220, 8%, 60%);
-  --graph-tool-error: hsl(4, 75%, 55%);
-  --graph-particle: hsl(160, 65%, 38%);
-  --graph-message: hsl(215, 85%, 52%);
-  --graph-label: hsl(220, 15%, 20%);
-  --graph-label-muted: hsl(220, 8%, 45%);
-  --graph-sphere-lightness: 52%;
-}
-
-.dark {
-  color-scheme: dark;
-  --background: oklch(0.13 0 0);
-  --foreground: oklch(0.97 0 0);
-  --card: oklch(0.19 0 0);
-  --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.19 0 0);
-  --popover-foreground: oklch(0.97 0 0);
-  --primary: oklch(0.93 0 0);
-  --primary-foreground: oklch(0.19 0 0);
-  --secondary: oklch(0.25 0 0);
-  --secondary-foreground: oklch(0.97 0 0);
-  --muted: oklch(0.25 0 0);
-  --muted-foreground: oklch(0.68 0 0);
-  --accent: oklch(0.25 0 0);
-  --accent-foreground: oklch(0.97 0 0);
-  --destructive: oklch(0.7 0.19 22);
-  --live: oklch(0.8 0.15 160);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.55 0 0);
-  --glass-edge: oklch(1 0 0 / 6%);
-  --glass-shadow: oklch(0 0 0 / 40%);
-
-  --graph-background: hsl(0, 0%, 6%);
-  --graph-link: hsl(0, 0%, 36%);
-  --graph-tool: hsl(0, 0%, 55%);
-  --graph-tool-error: hsl(4, 80%, 64%);
-  --graph-particle: hsl(160, 70%, 62%);
-  --graph-message: hsl(210, 90%, 66%);
-  --graph-label: hsl(0, 0%, 94%);
-  --graph-label-muted: hsl(0, 0%, 62%);
-  --graph-sphere-lightness: 66%;
+  --graph-background: var(--bgColor-default);
+  --graph-link: var(--fgColor-muted);
+  --graph-tool: var(--fgColor-muted);
+  --graph-tool-error: var(--fgColor-danger);
+  --graph-particle: var(--fgColor-success);
+  --graph-message: var(--fgColor-accent);
+  --graph-label: var(--fgColor-default);
+  --graph-label-muted: var(--fgColor-muted);
 }
 
 @utility type-title {
-  font-size: 0.9375rem;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  font-weight: 600;
+  font-size: var(--text-title-size-small);
+  line-height: var(--text-title-lineHeight-small);
+  font-weight: var(--base-text-weight-semibold);
 }
 
 @utility type-body {
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  letter-spacing: 0;
+  font-size: var(--text-body-size-medium);
+  line-height: var(--text-body-lineHeight-medium);
 }
 
 @utility type-caption {
-  font-size: 0.75rem;
-  line-height: 1.35;
-  letter-spacing: 0.005em;
+  font-size: var(--text-body-size-small);
+  line-height: var(--text-body-lineHeight-small);
 }
 
 @utility type-micro {
-  font-size: 0.6875rem;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-lineHeight);
+  font-weight: var(--base-text-weight-semibold);
 }
 
-@utility glass {
-  background: color-mix(in oklch, var(--card) 72%, transparent);
-  backdrop-filter: blur(20px) saturate(160%);
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge),
-    0 0 0 1px var(--border),
-    0 8px 32px var(--glass-shadow);
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .glass {
-    background: var(--card);
-    backdrop-filter: none;
-  }
+@utility surface {
+  background: var(--overlay-bgColor);
+  border: var(--borderWidth-thin) solid var(--borderColor-default);
+  box-shadow: var(--shadow-floating-small);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -159,19 +111,19 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     @apply font-sans antialiased;
-  }
-  html,
-  body,
-  .glass {
-    transition:
-      background-color 300ms ease,
-      color 300ms ease;
+    font-size: 100%;
   }
   body {
     @apply bg-background text-foreground overscroll-none;
+    font-size: var(--text-body-size-medium);
+    line-height: var(--text-body-lineHeight-medium);
+  }
+  :focus-visible {
+    outline: var(--focus-outline-width, 2px) solid var(--focus-outlineColor);
+    outline-offset: -2px;
   }
 }

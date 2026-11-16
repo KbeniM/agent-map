@@ -1,56 +1,70 @@
 # Design System
 
-A minimal, Apple-inspired interface in light and dark. The 3D map is the product; the chrome around it stays quiet.
+The interface follows GitHub's Primer design system (ADR-0007). The 3D map is the product; the chrome around it is Primer's product UI: quiet surfaces, 1px borders, compact controls.
 
-- **Tokens** (colour, radius, type) live in `apps/web/src/styles.css`. The map reads its colours from the `--graph-*` tokens at runtime.
-- **Components:** shadcn (radix base, maia preset) in `apps/web/src/components/ui/`, added with `bunx shadcn add`. App components sit in `apps/web/src/components/`.
-- **Icons:** Hugeicons (`@hugeicons/react` with `@hugeicons/core-free-icons`) for every interface and tool glyph; tool glyphs are mapped in `lib/icons.ts`. Provider logos come from `@lobehub/icons-static-svg`.
+- **Tokens:** `@primer/primitives`, imported in `apps/web/src/styles.css`. Tailwind's theme maps shadcn's names onto Primer's (`--color-background: var(--bgColor-default)`, `--color-control`, `--color-accent-emphasis` …). Use those Tailwind classes or `var(--<primer-token>)`; never a raw colour, size or radius.
+- **Font:** Mona Sans Variable, then Primer's sans-serif stack; mono is Primer's monospace stack.
+- **Components:** shadcn (Radix behaviour) in `apps/web/src/components/ui/`, restyled to Primer specs. Re-apply the Primer classes after any `bunx shadcn add`.
+- **Icons:** Hugeicons for interface and tool glyphs (`lib/icons.ts`); provider logos from `@lobehub/icons-static-svg`.
 
-## 1. Light and dark
+## 1. Themes
 
-- The theme follows the system by default. The toggle in the top-right cycles System, Light, Dark and the choice persists.
-- `:root` holds the light palette and `.dark` the dark one. Every token exists in both; a new token gets both values.
-- `src/lib/theme.ts` sets the `dark` class outside React, before the map re-renders, and `index.html` sets it before first paint.
+- System, Light or Dark from the toggle, persisted. `src/lib/theme.ts` sets `data-color-mode`, `data-light-theme`, `data-dark-theme` and the `dark` class, and pauses transitions for the swap frame.
+- `prefers-contrast: more` switches to Primer's `light_high_contrast` / `dark_high_contrast`.
 
 ## 2. Show only what matters
 
-- No status badges, pills or chips. State is plain text (`running`, `2m ago`) or a colour on the text itself.
-- No counters, charts or panels nobody asked for. A panel shows the selected thing and nothing else.
-- Settings are one floating panel with three tabs (Harnesses, Bridges, Display). Each control saves on change; a form with several fields shows Save only once it is dirty.
-- No decorative motion. Particles and a breathing halo mean something is running; nothing moves for its own sake.
+- No status badges, Counter pills or labels. State is text (`running`, `2m ago`) or the text's colour plus a word.
+- A panel shows the selected thing and nothing else.
+- No decorative motion. Particles and a breathing halo mean something is running.
 
-## 3. Colour tokens
+## 3. Components
 
-Use the semantic class names (`bg-card`, `text-muted-foreground`), never a raw colour.
+| Need | Use | Primer equivalent |
+| --- | --- | --- |
+| Action | `Button` `default` | Button |
+| The one confirming action of a form | `Button variant="primary"` (green) | Button primary |
+| Toolbar or row action | `Button variant="ghost"` | Button invisible |
+| Destructive confirm | `Button variant="destructive"`, after an inline confirmation naming the object | Button danger |
+| Section switch | `Tabs` | UnderlineNav |
+| On/off | `Switch` | ToggleSwitch |
+| One of a few options | `Select` | ActionMenu with single select |
+| Two-way choice on the map | segmented control in `map-controls.tsx` | SegmentedControl |
+| Floating panel | `Panel` (`surface`, `rounded-xl`) | Overlay |
 
-| Token | Use for |
+Controls are 32px high (`h-8`) and 44px on coarse pointers (`pointer-coarse:`). Radius is 6px for controls (`rounded-md`), 12px for panels and menus (`rounded-xl`). Elevation is `surface` (overlay background, default border, `shadow-floating-small`).
+
+## 4. Colour roles
+
+| Class or token | Use for |
 | --- | --- |
-| `background` | Page background |
-| `card`, `card-foreground` | Floating panels (through `glass`) and their text |
-| `secondary` | Hover and selected rows, active navigation |
-| `foreground`, `muted-foreground` | Primary text; secondary text (meta lines, summaries) |
-| `live` | Running tool calls and sessions active in the last 30 seconds |
-| `destructive` | Failed tool calls |
-| `--graph-*` | Map background, links, labels, tool nodes, tool-call particles (`--graph-particle`), subagent links and their messages (`--graph-message`). Hex, rgb or hsl only, because three.js does not parse oklch |
+| `background`, `foreground`, `muted-foreground` | Page, primary text, secondary text |
+| `card` / `surface` | Panels and menus |
+| `control`, `control-hover` | Button and select fills |
+| `secondary` | Selected row, active nav item |
+| `link`, `--borderColor-accent-emphasis` | Links, the selected-row bar, focus |
+| `live` | Running work and active sessions |
+| `destructive` | Failed tool calls, destructive actions |
+| `--data-*-color-emphasis` | Session groups on the map (`components/graph/colour.ts`); red, green and blue are excluded because they mean failed, live and message |
+| `--graph-*` | Map tokens; each resolves to an opaque Primer hex value because three.js cannot parse oklch or alpha hex |
 
-Each session gets its own hue (`components/graph/colour.ts`), shared by its list dot and its nodes.
+## 5. Typography
 
-## 4. Typography
+`type-title` (16px semibold, section and panel titles), `type-body` (14px), `type-caption` (12px), `type-micro` (12px semibold, small headings). Sentence case everywhere; no uppercase labels except the 2D/3D toggle. Inputs render at 16px below `sm` so iOS does not zoom.
 
-Structured text uses a `type-*` class, never a raw text-size utility: `type-title`, `type-body`, `type-caption`, `type-micro`. The font is the system font (SF Pro on Apple devices), mono is SF Mono. Tool names and paths are mono.
+## 6. Motion
 
-## 5. Surfaces and motion
+- Map motion in `components/graph/motion.ts`: nodes grow from their parent, live nodes breathe. Camera glides 900ms and then follows the selection.
+- Buttons press to `0.96` when enabled. State transitions name their properties and stay at 80–150ms.
+- `prefers-reduced-motion`: CSS animation off, camera cuts instead of gliding, no following, no particles, no pulses.
 
-- Floating chrome uses `glass` (translucent card, backdrop blur) and `rounded-3xl`; the navigation bar is `rounded-full`.
-- Panels enter with `animate-in fade-in` and a short slide from their own edge.
-- Map motion lives in `components/graph/motion.ts`: new nodes grow out of their parent (expo ease-out, no overshoot), a changed node settles from 70 %, live nodes breathe about once every 1.4 s.
-- Selecting a node glides the camera to it and then follows it while the layout moves. The 2D/3D switch flattens the same layout and turns rotation off.
-- `prefers-reduced-motion` turns animation off; `prefers-reduced-transparency` makes `glass` solid.
+## 7. The map
 
-## 6. The map
+- Session and agents: provider logo in a sphere tinted by the colour-by setting; sessions are larger and carry their title.
+- Tool call: the tool's glyph in a small sphere; muted when done, `live` while running, `destructive` when it failed.
+- Links point parent → child with an arrow. Subagent links are accent-blue and carry the task, then the answer. Tool links show `Tool · summary` while running or when an end is hovered or selected.
+- Dragging pins a node. The panels give keyboard users the same information the map shows.
 
-- Session (its main agent) and agents: the provider logo (`components/icons.tsx`, from `@lobehub/icons-static-svg`) in a translucent sphere in the session's hue. The session is the largest node, labelled with its title; agents are labelled with their agent type. An unknown provider gets the robot glyph.
-- Tool call: the tool's glyph (`toolIcon`) in a small sphere. Grey when done, `live` while running, `destructive` when it failed.
-- Links point from parent to child with an arrow. A subagent link is blue and labelled with the task it was given, then with its answer. A tool link is labelled with the tool and its summary while it runs, or while either end is hovered or selected.
-- A subagent replaces the tool call that spawned it. Only the latest tool calls per agent are drawn.
-- Dragging a node pins it where it is dropped.
+## 8. Review
+
+UI changes are reviewed with `better-interface` (it loads `better-accessibility`, `-layout`, `-writing`, `-typography`, `-colors`, `-ui`) and `design-review`, at 320px, on a coarse pointer, in both themes and with reduced motion.

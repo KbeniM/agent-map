@@ -32,28 +32,31 @@ function useBridgeSettings(bridge: Bridge) {
 
 function CopyBlock({ snippet }: { snippet: Snippet }) {
   const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard.writeText(snippet.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
   return (
     <div className="flex flex-col gap-1">
       <span className="type-caption text-muted-foreground">{snippet.title}</span>
-      {snippet.file && <span className="type-micro font-mono text-muted-foreground">{snippet.file}</span>}
       {snippet.content && (
-        <div className="relative">
-          <pre className="type-micro max-h-56 overflow-auto rounded-2xl bg-background/70 p-3 pr-10 font-mono">
+        <div className="overflow-hidden rounded-md border">
+          <div className="flex h-8 items-center justify-between border-b bg-canvas-muted pr-1 pl-3">
+            <span className="type-caption truncate font-mono text-muted-foreground">{snippet.file ?? "Terminal"}</span>
+            <Button variant="ghost" size="icon-xs" aria-label={copied ? "Copied" : "Copy"} onClick={copy}>
+              <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} className={copied ? "text-live" : undefined} />
+            </Button>
+          </div>
+          <pre
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable code block must be reachable by keyboard to scroll it (WCAG 2.1.1)
+            tabIndex={0}
+            role="region"
+            aria-label={snippet.file ?? snippet.title}
+            className="type-caption max-h-56 overflow-auto overscroll-contain bg-background p-3 font-mono"
+          >
             {snippet.content}
           </pre>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Copy"
-            className="absolute top-2 right-2"
-            onClick={() => {
-              void navigator.clipboard.writeText(snippet.content);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} />
-          </Button>
         </div>
       )}
     </div>
@@ -150,7 +153,7 @@ function RetentionForm({
         </Field>
       ))}
       {form.formState.isDirty && (
-        <Button type="submit" size="sm" className="mt-1">
+        <Button type="submit" variant="primary" size="sm" className="mt-1">
           Save
         </Button>
       )}
@@ -167,10 +170,19 @@ export function AdapterSettings({ bridge }: { bridge: Bridge }) {
   const { settings, save } = useBridgeSettings(bridge);
   const failure = adapters.error ?? settings.error;
 
-  if (failure) return <p className="type-body py-2 text-destructive">{failure.message}</p>;
+  if (failure) {
+    const rejected = failure.message.includes("token");
+    return (
+      <p role="alert" className="type-body py-3 text-destructive">
+        {rejected
+          ? `${bridge.name} rejected its token. Update the token in Bridges.`
+          : `Unable to reach ${bridge.url}. Start the bridge with bun run dev, or check the URL in Bridges.`}
+      </p>
+    );
+  }
   return (
     <>
-      <Section title="Harnesses">
+      <Section title="Adapters">
         <ul className="divide-y">
           {adapters.data?.map((adapter) => (
             <AdapterRow key={adapter.id} adapter={adapter} bridge={bridge} onSave={(patch) => save.mutate(patch)} />

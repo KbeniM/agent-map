@@ -6,7 +6,14 @@ import { AGENT_ICON, isMonoLogo, providerSvg, toolIcon } from "@/lib/icons";
 export function ProviderIcon({ provider, className }: { provider: Provider; className?: string }) {
   const svg = providerSvg(provider, "black");
   if (!svg)
-    return <HugeiconsIcon icon={AGENT_ICON} aria-hidden className={cn("size-4 text-muted-foreground", className)} />;
+    return (
+      <HugeiconsIcon
+        icon={AGENT_ICON}
+        size={16}
+        aria-hidden
+        className={cn("size-4 shrink-0 text-muted-foreground", className)}
+      />
+    );
   return (
     <img
       alt=""

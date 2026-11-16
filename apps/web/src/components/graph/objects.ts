@@ -4,7 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as THREE from "three";
 import { AGENT_ICON, isMonoLogo, providerSvg, toolIcon } from "@/lib/icons";
-import { sessionColour, token } from "./colour";
+import { colourToken, token } from "./colour";
 import { pulse, release } from "./motion";
 
 export const RADIUS = { session: 9, agent: 6, tool: 3 };
@@ -122,7 +122,7 @@ export function nodeObject(node: MapNode, { selected, dark, hue }: Look) {
   if (node.type === "tool") return toolObject(node, selected, dark);
   const group = new THREE.Group();
   const radius = RADIUS[node.type];
-  const colour = sessionColour(hue, token("--graph-sphere-lightness"));
+  const colour = token(colourToken(hue));
   group.add(ball(radius, colour, selected ? 0.5 : node.live ? 0.32 : 0.18));
   const provider = node.provider ?? "unknown";
   const logo = providerSvg(provider, "white");

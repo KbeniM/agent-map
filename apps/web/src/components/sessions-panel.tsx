@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import { sessionColour } from "@/components/graph/colour";
 import { ProviderIcon } from "@/components/icons";
 import { Panel } from "@/components/panel";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -27,7 +28,7 @@ function FilterBar({ harnesses }: { harnesses: string[] }) {
         />
         <Input
           aria-label="Search sessions"
-          placeholder="Search"
+          placeholder="Title, folder or harness"
           value={filters.query}
           onChange={(event) => setFilters({ query: event.target.value })}
           className="pl-9"
@@ -64,21 +65,26 @@ function Empty({ filtered }: { filtered: boolean }) {
   const connections = Object.values(useGraphs((state) => state.connections));
   const bridges = usePreferences((state) => state.bridges).filter((bridge) => bridge.enabled);
   const message = filtered
-    ? "No session matches the filters."
+    ? "No session matches these filters."
     : connections.includes("unauthorized")
       ? "A bridge rejected its token."
       : connections.includes("open")
         ? "No activity yet. Start an agent, or set up a harness in Settings."
         : `Waiting for ${bridges[0]?.url ?? "a bridge"}. Run bun run dev, or add a bridge in Settings.`;
+  const setFilters = usePreferences((state) => state.setFilters);
   return (
-    <p className="type-body px-5 pb-4 text-muted-foreground">
-      {message}{" "}
-      {!filtered && (
-        <Link to="/settings" className="text-foreground underline underline-offset-4">
-          Settings
-        </Link>
+    <div className="flex flex-col items-start gap-2 px-5 pb-4">
+      <p className="type-body text-muted-foreground">{message}</p>
+      {filtered ? (
+        <Button size="sm" onClick={() => setFilters({ query: "", harness: "all", liveOnly: false })}>
+          Clear filters
+        </Button>
+      ) : (
+        <Button size="sm" asChild>
+          <Link to="/settings">Set up a harness</Link>
+        </Button>
       )}
-    </p>
+    </div>
   );
 }
 
@@ -126,8 +132,9 @@ export function SessionsPanel({ selected }: { selected?: string }) {
                     to="/"
                     search={{ node: id }}
                     className={cn(
-                      "flex flex-col gap-0.5 rounded-2xl px-3 py-2.5 transition-colors hover:bg-secondary/60 active:scale-[0.99]",
-                      selected === id && "bg-secondary",
+                      "relative flex flex-col gap-0.5 rounded-md px-3 py-2 transition-colors hover:bg-[var(--button-invisible-bgColor-hover)]",
+                      selected === id &&
+                        "bg-secondary before:absolute before:inset-y-1.5 before:-left-2 before:w-1 before:rounded-md before:bg-[var(--borderColor-accent-emphasis)]",
                     )}
                   >
                     <span className="flex items-center gap-2">
@@ -135,7 +142,7 @@ export function SessionsPanel({ selected }: { selected?: string }) {
                       <span className="type-body truncate font-medium">{session.title}</span>
                       <span
                         aria-hidden
-                        className="ml-auto size-1.5 shrink-0 rounded-full"
+                        className="ml-auto size-2 shrink-0 rounded-full"
                         style={{ background: sessionColour(session.id) }}
                       />
                     </span>

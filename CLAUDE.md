@@ -14,7 +14,7 @@ Before you touch an area, read its document. Read only the matching ones. Each r
 | --- | --- | --- |
 | Any code or test | [`docs/coding-standards.md`](docs/coding-standards.md) | Comments, `type` not `kind`, `tests/` folders, malformed-input cases per route, mutation and e2e |
 | Bridge, events, harness adapters, stream | [`docs/architecture.md`](docs/architecture.md), [`docs/research/harness-formats.md`](docs/research/harness-formats.md) | One event schema in `packages/shared`, web never reads harness files, verify a harness format before mapping it |
-| UI, styling, components, the 3D map | [`docs/design-system.md`](docs/design-system.md) | Light and dark, system by default, semantic tokens, shadcn in `components/ui`, no status badges or pills |
+| UI, styling, components, the 3D map | [`docs/design-system.md`](docs/design-system.md) | GitHub Primer tokens and Mona Sans, light/dark/high-contrast, shadcn restyled to Primer, no status badges or pills |
 | Exposure, tokens, CORS, what leaves the bridge | [`docs/auth-and-security.md`](docs/auth-and-security.md) | Token required off loopback, one summary field per tool call, messages capped |
 | Vite, TanStack Router and Query, Zustand | [`docs/framework-conventions.md`](docs/framework-conventions.md) | File routes, Hono RPC, Zustand for the live map |
 | UI copy, names, domain terms | [`GLOSSARY.md`](GLOSSARY.md) | Use the glossary term, never an `_Avoid_` word |
@@ -27,7 +27,8 @@ Versions live in `package.json` and scripts in its `scripts`. Do not copy either
 
 - [ponytail](.agents/skills/ponytail/SKILL.md) (full mode): every task. End with what was skipped or unverified and any material risk.
 - [fallow](.agents/skills/fallow/SKILL.md): callers, importers, blast radius, cleanup. Its task map says which command to run.
-- [apple-design](.agents/skills/apple-design/SKILL.md): every UI task.
+- [apple-design](.agents/skills/apple-design/SKILL.md): motion and interaction on every UI task. The visual language is Primer (ADR-0007).
+- [better-interface](.agents/skills/better-interface/SKILL.md): review every UI change before it ships.
 
 Skills are pinned in `skills-lock.json`. `bunx skills experimental_install` restores them into `.agents/skills/`.
 
