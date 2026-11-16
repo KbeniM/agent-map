@@ -8,7 +8,7 @@ Two kinds of rule live here. **Mechanical** rules are enforced by a check, which
 | --- | --- |
 | Biome formatting and lint | edit hook, `.githooks/pre-commit`, CI `bun run check` |
 | Comments, `type` not `kind`, no hex colour or raw text size in UI, no status badge, web imports only bridge types and never the file system, exact versions, test files only in `tests/` | `scripts/lint.ts` (its `RULES` table), run by `bun run check` |
-| Every input-taking bridge route has its malformed cases | `apps/api/tests/http/routes.test.ts` (`every input-taking route has malformed cases`) |
+| Every input-taking bridge route has its malformed cases; every `/v1` route except health is in the auth table | `apps/api/tests/http/routes.test.ts` (`every input-taking route has malformed cases`, `every /v1 route except health is in the auth table`) |
 | Changed code adds no dead code, duplication or complexity | fallow audit in `.githooks/pre-commit` |
 
 When a check is wrong, fix the check. Never work around it.
@@ -28,7 +28,7 @@ Only two comment forms exist, both one line, both from the `ponytail` rules:
 
 - Each workspace keeps its tests in its own `tests/` folder. `bun test` runs them; `scripts/setup-test.ts` sets the environment.
 - **Negative cases.** Every input-taking bridge route sits in the `MALFORMED` table of `apps/api/tests/http/routes.test.ts`, with at least three malformed bodies (broken JSON, unknown event type, missing field). A new route gets a row, or the completeness test fails.
-- **Harness adapters** are tested against recorded transcript lines, never against a live harness. A new transcript shape gets a fixture line in the adapter's test first.
+- **Harness adapters** are tested against payloads built from the vendor's documented fields (`docs/research/harness-formats.md`), never against a live harness. Each adapter test covers every mapped event, failure, the subagent link, and three malformed payloads. A new shape gets a test first.
 - **A bug fix starts with a failing test** at the seam where the bug happens. Watch it fail, then fix.
 - **Mutation testing** is local and on demand. CI does not run it.
   - `bun run mutation` mutates the code changed against the base ref. Add a path or `--all` for more, and `--allow-dirty` for uncommitted work.

@@ -1,9 +1,9 @@
 import type { MapLink, MapNode } from "@agent-map/shared/layout";
-import { Bot } from "lucide-react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as THREE from "three";
-import { isMonoLogo, providerSvg, toolIcon } from "@/lib/icons";
+import { AGENT_ICON, isMonoLogo, providerSvg, toolIcon } from "@/lib/icons";
 import { sessionColour, token } from "./colour";
 import { pulse, release } from "./motion";
 
@@ -23,8 +23,8 @@ function svgTexture(key: string, svg: string) {
   return texture;
 }
 
-const lucide = (icon: typeof Bot) =>
-  renderToStaticMarkup(createElement(icon, { size: 128, color: "white", strokeWidth: 1.75 }));
+const glyph = (icon: IconSvgElement) =>
+  renderToStaticMarkup(createElement(HugeiconsIcon, { icon, size: 128, color: "white", strokeWidth: 1.75 }));
 
 function haloTexture() {
   const cached = textures.get("halo");
@@ -94,8 +94,10 @@ function ball(radius: number, colour: string, opacity: number) {
 
 const shorten = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 
-export const objectKey = (node: MapNode, selected: boolean, theme: string) =>
-  `${node.type}|${node.label}|${node.live}|${node.ok}|${node.provider}|${selected}|${theme}`;
+export type Look = { selected: boolean; dark: boolean; theme: string; hue: string };
+
+export const objectKey = (node: MapNode, look: Look) =>
+  `${node.type}|${node.label}|${node.live}|${node.ok}|${node.provider}|${look.selected}|${look.theme}|${look.hue}`;
 
 function toolObject(node: MapNode, selected: boolean, dark: boolean) {
   const group = new THREE.Group();
@@ -106,7 +108,7 @@ function toolObject(node: MapNode, selected: boolean, dark: boolean) {
       : token("--graph-tool");
   const radius = RADIUS.tool * (selected ? 1.4 : 1);
   group.add(ball(radius, colour, node.live ? 0.35 : 0.2));
-  const svg = lucide(toolIcon(node.label));
+  const svg = glyph(toolIcon(node.label));
   group.add(sprite(svgTexture(svg, svg), colour, radius * 1.1, dark));
   if (node.live) {
     const halo = sprite(haloTexture(), colour, radius * 4, dark, true);
@@ -116,19 +118,19 @@ function toolObject(node: MapNode, selected: boolean, dark: boolean) {
   return group;
 }
 
-export function nodeObject(node: MapNode, selected: boolean, dark: boolean) {
+export function nodeObject(node: MapNode, { selected, dark, hue }: Look) {
   if (node.type === "tool") return toolObject(node, selected, dark);
   const group = new THREE.Group();
   const radius = RADIUS[node.type];
-  const colour = sessionColour(node.sessionId, token("--graph-sphere-lightness"));
+  const colour = sessionColour(hue, token("--graph-sphere-lightness"));
   group.add(ball(radius, colour, selected ? 0.5 : node.live ? 0.32 : 0.18));
   const provider = node.provider ?? "unknown";
   const logo = providerSvg(provider, "white");
   const tint = isMonoLogo(provider) ? token("--graph-label") : "white";
-  const glyph = logo
+  const mark = logo
     ? sprite(svgTexture(`provider:${provider}`, logo), tint, radius * 1.15, dark)
-    : sprite(svgTexture("agent", lucide(Bot)), colour, radius * 1.15, dark);
-  group.add(glyph);
+    : sprite(svgTexture("agent", glyph(AGENT_ICON)), colour, radius * 1.15, dark);
+  group.add(mark);
   if (node.live) {
     const halo = sprite(haloTexture(), colour, radius * 3.2, dark, true);
     group.add(halo);

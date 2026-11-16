@@ -24,7 +24,7 @@ const events: AgentEvent[] = [
 ];
 
 describe("toMap", () => {
-  const map = toMap(applyAll(emptyGraph(), events), now, 4);
+  const map = toMap(applyAll(emptyGraph(), events), now, { toolsPerAgent: 4 });
 
   test("draws the session as the root and the subagent under it", () => {
     expect(map.nodes.find((node) => node.id === "agent:s1")).toMatchObject({ type: "session", label: "Fix login" });
@@ -77,6 +77,18 @@ describe("toMap", () => {
     const nodes = toMap(applyAll(emptyGraph(), [...events, reply]), now).nodes;
     expect(nodes.find((node) => node.id === "agent:a1")?.provider).toBe("openai");
     expect(nodes.find((node) => node.id === "agent:s1")?.provider).toBe("anthropic");
+  });
+
+  test("draws no tool calls when the limit is zero", () => {
+    expect(
+      toMap(applyAll(emptyGraph(), events), now, { toolsPerAgent: 0 }).nodes.some((node) => node.type === "tool"),
+    ).toBe(false);
+  });
+
+  test("uses the configured live window", () => {
+    const graph = applyAll(emptyGraph(), events.slice(0, 1));
+    expect(toMap(graph, now + 5000, { liveMs: 10_000 }).nodes[0].live).toBe(true);
+    expect(toMap(graph, now + 5000, { liveMs: 1000 }).nodes[0].live).toBe(false);
   });
 
   test("marks a session idle after its last event ages out", () => {

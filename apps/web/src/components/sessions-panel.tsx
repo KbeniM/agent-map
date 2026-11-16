@@ -1,22 +1,94 @@
 import { nodeId } from "@agent-map/shared/layout";
 import { providerOf } from "@agent-map/shared/providers";
+import { Search01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { useMemo } from "react";
 import { sessionColour } from "@/components/graph/colour";
 import { ProviderIcon } from "@/components/icons";
 import { Panel } from "@/components/panel";
-import { ago, useNow } from "@/lib/time";
-import { useGraph } from "@/stores/graph";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ago } from "@/lib/time";
+import { useVisibleGraph } from "@/lib/visible";
+import { useGraph, useGraphs } from "@/stores/graph";
 import { usePreferences } from "@/stores/preferences";
 
-const LIVE_MS = 30_000;
+function FilterBar({ harnesses }: { harnesses: string[] }) {
+  const { filters, setFilters } = usePreferences();
+  return (
+    <div className="flex flex-col gap-2 px-4 pt-4 pb-2">
+      <div className="relative">
+        <HugeiconsIcon
+          icon={Search01Icon}
+          className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          aria-label="Search sessions"
+          placeholder="Search"
+          value={filters.query}
+          onChange={(event) => setFilters({ query: event.target.value })}
+          className="pl-9"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <Select value={filters.harness} onValueChange={(harness) => setFilters({ harness })}>
+          <SelectTrigger size="sm" aria-label="Harness" className="flex-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All harnesses</SelectItem>
+            {harnesses.map((harness) => (
+              <SelectItem key={harness} value={harness}>
+                {harness}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <label className="type-caption flex items-center gap-2 text-muted-foreground">
+          Live
+          <Switch
+            aria-label="Live only"
+            checked={filters.liveOnly}
+            onCheckedChange={(liveOnly) => setFilters({ liveOnly })}
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function Empty({ filtered }: { filtered: boolean }) {
+  const connections = Object.values(useGraphs((state) => state.connections));
+  const bridges = usePreferences((state) => state.bridges).filter((bridge) => bridge.enabled);
+  const message = filtered
+    ? "No session matches the filters."
+    : connections.includes("unauthorized")
+      ? "A bridge rejected its token."
+      : connections.includes("open")
+        ? "No activity yet. Start an agent, or set up a harness in Settings."
+        : `Waiting for ${bridges[0]?.url ?? "a bridge"}. Run bun run dev, or add a bridge in Settings.`;
+  return (
+    <p className="type-body px-5 pb-4 text-muted-foreground">
+      {message}{" "}
+      {!filtered && (
+        <Link to="/settings" className="text-foreground underline underline-offset-4">
+          Settings
+        </Link>
+      )}
+    </p>
+  );
+}
 
 export function SessionsPanel({ selected }: { selected?: string }) {
-  const graph = useGraph((state) => state.graph);
-  const connection = useGraph((state) => state.connection);
-  const url = usePreferences((state) => state.url);
-  const now = useNow(5000);
+  const everything = useGraph();
+  const { graph, now, liveMs } = useVisibleGraph();
+  const harnesses = useMemo(
+    () => [...new Set(Object.values(everything.sessions).map((session) => session.harness))].sort(),
+    [everything],
+  );
 
   const sessions = useMemo(() => {
     const agents = Object.values(graph.agents);
@@ -32,34 +104,22 @@ export function SessionsPanel({ selected }: { selected?: string }) {
       })
       .sort((a, b) => b.lastAt.localeCompare(a.lastAt));
   }, [graph]);
+  const total = Object.keys(everything.sessions).length;
 
   return (
     <Panel side="left" label="Sessions">
-      <h2 className="type-caption px-5 pt-4 pb-2 text-muted-foreground">
-        {sessions.length} {sessions.length === 1 ? "session" : "sessions"}
+      {total > 0 && <FilterBar harnesses={harnesses} />}
+      <h2 className="type-caption px-5 pb-2 text-muted-foreground">
+        {sessions.length === total ? total : `${sessions.length} of ${total}`} {total === 1 ? "session" : "sessions"}
       </h2>
       {sessions.length === 0 ? (
-        <p className="type-body px-5 text-muted-foreground">
-          {connection === "open" ? (
-            <>
-              No activity yet. Start Claude Code, or send events from any harness.{" "}
-              <Link to="/connect" className="text-foreground underline underline-offset-4">
-                Connect
-              </Link>
-            </>
-          ) : (
-            <>
-              Waiting for the bridge at <span className="font-mono text-foreground">{url}</span>. Run{" "}
-              <span className="font-mono text-foreground">bun run dev</span>.
-            </>
-          )}
-        </p>
+        <Empty filtered={total > 0} />
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <ul className="px-2 pb-2">
             {sessions.map((session) => {
               const id = nodeId.agent(session.id);
-              const live = now - Date.parse(session.lastAt) < LIVE_MS;
+              const live = now - Date.parse(session.lastAt) < liveMs;
               return (
                 <li key={session.id}>
                   <Link
@@ -80,8 +140,9 @@ export function SessionsPanel({ selected }: { selected?: string }) {
                       />
                     </span>
                     <span className="type-caption pl-6 text-muted-foreground">
+                      {session.harness} ·{" "}
                       {session.agents > 0 && `${session.agents} ${session.agents === 1 ? "subagent" : "subagents"} · `}
-                      {session.tools} tools ·{" "}
+                      {session.tools} {session.tools === 1 ? "tool" : "tools"} ·{" "}
                       {live ? <span className="text-live">now</span> : `${ago(session.lastAt, now)} ago`}
                     </span>
                   </Link>

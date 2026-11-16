@@ -9,8 +9,16 @@ A program that runs agents and records what they do: Claude Code, Codex, a custo
 _Avoid_: Client, provider, runtime
 
 **Bridge**:
-The local server that reads harnesses, keeps the event log and streams it to the map.
+The server that reads harnesses, keeps the events and streams them to the map. Local on a laptop, or hosted for cloud sessions.
 _Avoid_: Backend, API server, daemon
+
+**Hook**:
+A harness's own callback that hands one activity record to a command or URL as it happens.
+_Avoid_: Webhook, trigger, callback
+
+**Forwarder**:
+The small `agent-map-hook` script that posts a hook's payload to a bridge.
+_Avoid_: Shim, relay, agent
 
 **Adapter**:
 The bridge code that turns one harness's records into events.

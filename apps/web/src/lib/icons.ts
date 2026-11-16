@@ -1,4 +1,18 @@
 import type { Provider } from "@agent-map/shared/providers";
+import {
+  CheckListIcon,
+  ComputerTerminal01Icon,
+  File01Icon,
+  FileEditIcon,
+  Globe02Icon,
+  Message01Icon,
+  Plug01Icon,
+  RoboticIcon,
+  Search01Icon,
+  SparklesIcon,
+  Wrench01Icon,
+} from "@hugeicons/core-free-icons";
+import type { IconSvgElement } from "@hugeicons/react";
 import anthropic from "@lobehub/icons-static-svg/icons/claude-color.svg?raw";
 import cursor from "@lobehub/icons-static-svg/icons/cursor.svg?raw";
 import deepseek from "@lobehub/icons-static-svg/icons/deepseek-color.svg?raw";
@@ -9,20 +23,6 @@ import meta from "@lobehub/icons-static-svg/icons/meta-color.svg?raw";
 import mistral from "@lobehub/icons-static-svg/icons/mistral-color.svg?raw";
 import openai from "@lobehub/icons-static-svg/icons/openai.svg?raw";
 import qwen from "@lobehub/icons-static-svg/icons/qwen-color.svg?raw";
-import {
-  Bot,
-  FilePen,
-  FileText,
-  Globe,
-  ListChecks,
-  type LucideIcon,
-  MessageSquare,
-  Plug,
-  Search,
-  Sparkles,
-  Terminal,
-  Wrench,
-} from "lucide-react";
 
 const LOGOS: Record<Exclude<Provider, "unknown">, string> = {
   anthropic,
@@ -62,17 +62,19 @@ export function providerSvg(provider: Provider, mono: string) {
 
 export const isMonoLogo = (provider: Provider) => providerSvg(provider, "x") !== providerSvg(provider, "y");
 
-const TOOL_ICONS: [RegExp, LucideIcon][] = [
-  [/^(bash|shell|exec|run|terminal|powershell)/i, Terminal],
-  [/^(read|view|cat|open)/i, FileText],
-  [/^(edit|write|multiedit|notebookedit|apply_?patch|patch|create)/i, FilePen],
-  [/^(grep|glob|search|find|ls|list)/i, Search],
-  [/^(webfetch|websearch|fetch|browse|web)/i, Globe],
-  [/^(agent|task|subagent)/i, Bot],
-  [/^(todo|plan)/i, ListChecks],
-  [/^mcp__/i, Plug],
-  [/^skill/i, Sparkles],
-  [/handback|sendmessage|message/i, MessageSquare],
+const TOOL_ICONS: [RegExp, IconSvgElement][] = [
+  [/^(bash|shell|exec|run|terminal|powershell)/i, ComputerTerminal01Icon],
+  [/^(read|view|cat|open)/i, File01Icon],
+  [/^(edit|write|multiedit|notebookedit|apply_?patch|patch|create)/i, FileEditIcon],
+  [/^(grep|glob|search|find|ls|list)/i, Search01Icon],
+  [/^(webfetch|websearch|fetch|browse|web)/i, Globe02Icon],
+  [/^(agent|task|subagent)/i, RoboticIcon],
+  [/^(todo|plan)/i, CheckListIcon],
+  [/^mcp__/i, Plug01Icon],
+  [/^skill/i, SparklesIcon],
+  [/handback|sendmessage|message/i, Message01Icon],
 ];
 
-export const toolIcon = (name: string) => TOOL_ICONS.find(([pattern]) => pattern.test(name))?.[1] ?? Wrench;
+export const AGENT_ICON = RoboticIcon;
+
+export const toolIcon = (name: string) => TOOL_ICONS.find(([pattern]) => pattern.test(name))?.[1] ?? Wrench01Icon;

@@ -1,11 +1,50 @@
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { serveStatic } from "@hono/bun";
+import pkg from "../package.json";
 import { createApp } from "./app";
 import { env } from "./env";
-import { publish } from "./events/log";
-import { watchClaudeCode } from "./harness/watch";
+import { createStore } from "./events/store";
+import { ADAPTERS } from "./harness/registry";
+import { createRuntime } from "./runtime";
 
-const claude = watchClaudeCode(env.CLAUDE_PROJECTS_DIR, env.SINCE_HOURS, publish);
+// why: anything beyond loopback carries tool activity off the machine, so it must be authenticated
+if (!env.loopback && !env.AGENT_MAP_TOKEN) {
+  console.error(`Refusing to listen on ${env.HOST} without AGENT_MAP_TOKEN.`);
+  process.exit(1);
+}
 
-const app = createApp(claude.status);
+mkdirSync(env.DATA_DIR, { recursive: true });
+const store = createStore(join(env.DATA_DIR, "events.db"));
+const runtime = createRuntime({
+  adapters: ADAPTERS,
+  store,
+  dataDir: env.DATA_DIR,
+  defaults: { retentionDays: env.RETENTION_DAYS, sinceHours: env.SINCE_HOURS },
+});
+const stop = await runtime.start();
+const app = createApp({ store, runtime, token: env.AGENT_MAP_TOKEN, origins: env.origins, version: pkg.version });
 
-// why: the bridge serves tool activity from this machine, so it only listens on loopback
-export default { port: env.BRIDGE_PORT, hostname: "127.0.0.1", fetch: app.fetch };
+app.get("/hook.sh", serveStatic({ path: join(import.meta.dir, "../bin/agent-map-hook") }));
+app.get("/opencode-plugin.js", serveStatic({ path: join(import.meta.dir, "../bin/opencode-plugin.js") }));
+if (env.STATIC_DIR) {
+  const page = serveStatic({ path: join(env.STATIC_DIR, "index.html") });
+  app.use("/*", serveStatic({ root: env.STATIC_DIR }));
+  // why: unknown /v1 paths must stay 404 instead of falling through to the app shell
+  app.get("*", async (c, next) => {
+    if (c.req.path.startsWith("/v1/")) return c.notFound();
+    return (await page(c, next)) ?? c.notFound();
+  });
+}
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    stop();
+    store.close();
+    process.exit(0);
+  });
+}
+
+console.log(`agent-map bridge on http://${env.HOST}:${env.BRIDGE_PORT}`);
+
+export default { port: env.BRIDGE_PORT, hostname: env.HOST, fetch: app.fetch };

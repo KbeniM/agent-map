@@ -4,9 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph3D, { type ForceGraphMethods } from "react-force-graph-3d";
 import type { Object3D } from "three";
 import { useResolvedTheme } from "@/lib/theme";
-import { useNow } from "@/lib/time";
-import { useGraph } from "@/stores/graph";
-import { usePreferences } from "@/stores/preferences";
+import { useVisibleGraph } from "@/lib/visible";
+import { type ColourBy, usePreferences } from "@/stores/preferences";
 import { type Link, type Node, useFirstFit, useFocus, useForces, useViewSwitch } from "./camera";
 import { token } from "./colour";
 import { settle } from "./motion";
@@ -49,24 +48,24 @@ function cached(
 type Colours = Record<"link" | "particle" | "message" | "focus", string>;
 
 // why: subagent links carry messages and read as blue; tool links stay quiet until hovered or live
-function linkStyle(colours: Colours, touches: (link: Link) => boolean) {
+function linkStyle(colours: Colours, touches: (link: Link) => boolean, particles: boolean) {
   const spawn = (link: Link) => link.type === "spawn";
   return {
     linkColor: (link: Link) => (touches(link) ? colours.focus : spawn(link) ? colours.message : colours.link),
     linkWidth: (link: Link) => (touches(link) ? 0.6 : spawn(link) ? 0.5 : 0.25),
     linkDirectionalArrowLength: (link: Link) => (spawn(link) ? 3.5 : 2),
     linkDirectionalArrowColor: (link: Link) => (spawn(link) ? colours.message : colours.link),
-    linkDirectionalParticles: (link: Link) => (link.live ? 3 : 0),
+    linkDirectionalParticles: (link: Link) => (particles && link.live ? 3 : 0),
     linkDirectionalParticleWidth: (link: Link) => (spawn(link) ? 2 : 1.4),
     linkDirectionalParticleColor: (link: Link) => (spawn(link) ? colours.message : colours.particle),
   };
 }
 
 function useMapData(nodes: Map<string, Node>) {
-  const graph = useGraph((state) => state.graph);
-  const now = useNow(5000);
+  const { graph, now, liveMs } = useVisibleGraph();
+  const toolsPerAgent = usePreferences((state) => state.display.toolsPerAgent);
   return useMemo(() => {
-    const map = toMap(graph, now);
+    const map = toMap(graph, now, { toolsPerAgent, liveMs });
     const parents = new Map(map.links.map((link) => [link.target, link.source]));
     const ids = new Set(map.nodes.map((node) => node.id));
     for (const id of nodes.keys()) if (!ids.has(id)) nodes.delete(id);
@@ -81,21 +80,27 @@ function useMapData(nodes: Map<string, Node>) {
       nodes: map.nodes.map((node) => nodes.get(node.id) as Node),
       links: map.links.map((link) => ({ ...link })),
     };
-  }, [graph, now, nodes]);
+  }, [graph, now, nodes, toolsPerAgent, liveMs]);
 }
+
+const HUE: Record<ColourBy, (node: Node) => string> = {
+  session: (node) => node.sessionId,
+  provider: (node) => node.provider ?? "unknown",
+  harness: (node) => node.harness,
+};
 
 function useObjects(selected: string | undefined, theme: string, showLabel: (link: Link) => boolean) {
   const [nodeObjects] = useState<Cache>(() => new Map());
   const [linkObjects] = useState<Cache>(() => new Map());
-  const dark = theme === "dark";
+  const colourBy = usePreferences((state) => state.display.colourBy);
   return {
     nodeThreeObject: (node: Node) => {
-      const isSelected = node.id === selected;
+      const look = { selected: node.id === selected, dark: theme === "dark", theme, hue: HUE[colourBy](node) };
       return cached(
         nodeObjects,
         String(node.id),
-        objectKey(node, isSelected, theme),
-        () => nodeObject(node, isSelected, dark),
+        objectKey(node, look),
+        () => nodeObject(node, look),
         (object, fresh) => settle(object, fresh ? 0.01 : 0.7),
       );
     },
@@ -145,7 +150,12 @@ export function AgentGraph({ selected, onSelect }: Props) {
 
   const focus = hovered ?? selected;
   const touches = (link: Link) => focus !== undefined && (endId(link.source) === focus || endId(link.target) === focus);
-  const objects = useObjects(selected, theme, (link) => link.type === "spawn" || link.live || touches(link));
+  const display = usePreferences((state) => state.display);
+  const objects = useObjects(
+    selected,
+    theme,
+    (link) => link.type === "spawn" || touches(link) || (display.toolLabels === "live" && link.live),
+  );
   const hover = (id?: string) => setHovered(id);
 
   return (
@@ -167,7 +177,7 @@ export function AgentGraph({ selected, onSelect }: Props) {
         object.position.set((start.x + end.x) / 2, (start.y + end.y) / 2, (start.z + end.z) / 2);
         return false;
       }}
-      {...linkStyle(colours, touches)}
+      {...linkStyle(colours, touches, display.particles)}
       linkOpacity={0.55}
       linkDirectionalArrowRelPos={1}
       linkDirectionalParticleSpeed={0.01}

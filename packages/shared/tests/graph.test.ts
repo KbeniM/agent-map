@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { AgentEvent } from "../src/events";
-import { applyAll, emptyGraph, parentOf } from "../src/graph";
+import { applyAll, emptyGraph, forgetSession, mergeGraphs, parentOf } from "../src/graph";
 
 const at = (second: number) => `2026-11-16T10:00:${String(second).padStart(2, "0")}.000Z`;
 
@@ -74,6 +74,45 @@ describe("apply", () => {
     expect(kept).toHaveLength(30);
     expect(kept[0]).toBe("m0");
     expect(kept.at(-1)).toBe("m39");
+  });
+
+  test("forgets a session with its agents and tools", () => {
+    const other: AgentEvent = {
+      type: "tool.started",
+      sessionId: "s2",
+      agentId: "s2",
+      toolId: "x",
+      name: "Read",
+      at: at(1),
+    };
+    const graph = forgetSession(applyAll(emptyGraph(), [...run, other]), "s1");
+    expect(Object.keys(graph.sessions)).toEqual(["s2"]);
+    expect(Object.keys(graph.agents)).toEqual(["s2"]);
+    expect(Object.keys(graph.tools)).toEqual(["x"]);
+  });
+
+  test("merges graphs from several bridges", () => {
+    const other: AgentEvent = {
+      type: "tool.started",
+      sessionId: "s2",
+      agentId: "s2",
+      toolId: "x",
+      name: "Read",
+      at: at(1),
+    };
+    const merged = mergeGraphs([applyAll(emptyGraph(), run), applyAll(emptyGraph(), [other])]);
+    expect(Object.keys(merged.sessions).sort()).toEqual(["s1", "s2"]);
+  });
+
+  test("links a subagent to a named parent agent when no spawn call is known", () => {
+    const events: AgentEvent[] = [
+      { type: "agent.started", sessionId: "s1", agentId: "a1", name: "planner", at: at(1) },
+      { type: "agent.started", sessionId: "s1", agentId: "a2", name: "worker", parentAgentId: "a1", at: at(2) },
+      { type: "agent.started", sessionId: "s1", agentId: "a3", name: "orphan", parentAgentId: "missing", at: at(3) },
+    ];
+    const graph = applyAll(emptyGraph(), events);
+    expect(parentOf(graph, graph.agents.a2)).toBe("a1");
+    expect(parentOf(graph, graph.agents.a3)).toBe("s1");
   });
 
   test("does not mutate the previous graph", () => {

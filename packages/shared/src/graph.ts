@@ -9,6 +9,7 @@ export type Agent = {
   model?: string;
   messages: Message[];
   parentToolId?: string;
+  parentAgentId?: string;
   startedAt: string;
   lastAt: string;
   stoppedAt?: string;
@@ -71,7 +72,8 @@ const HANDLERS: Handlers = {
     next.agents[event.agentId] = {
       ...agent,
       name: event.name,
-      parentToolId: event.parentToolId,
+      parentToolId: event.parentToolId ?? agent.parentToolId,
+      parentAgentId: event.parentAgentId ?? agent.parentAgentId,
       model: event.model ?? agent.model,
     };
   },
@@ -122,5 +124,26 @@ export function apply(graph: Graph, event: AgentEvent): Graph {
 
 export const applyAll = (graph: Graph, events: AgentEvent[]) => events.reduce(apply, graph);
 
+// why: a spawning tool call is the precise parent; harnesses that only know the parent agent name it directly
 export const parentOf = (graph: Graph, agent: Agent) =>
-  agent.id === agent.sessionId ? undefined : (graph.tools[agent.parentToolId ?? ""]?.agentId ?? agent.sessionId);
+  agent.id === agent.sessionId
+    ? undefined
+    : (graph.tools[agent.parentToolId ?? ""]?.agentId ??
+      (agent.parentAgentId && graph.agents[agent.parentAgentId] ? agent.parentAgentId : agent.sessionId));
+
+export function forgetSession(graph: Graph, sessionId: string): Graph {
+  const agents = Object.fromEntries(Object.entries(graph.agents).filter(([, agent]) => agent.sessionId !== sessionId));
+  const tools = Object.fromEntries(Object.entries(graph.tools).filter(([, tool]) => agents[tool.agentId]));
+  const { [sessionId]: _removed, ...sessions } = graph.sessions;
+  return { sessions, agents, tools };
+}
+
+export const mergeGraphs = (graphs: Graph[]): Graph =>
+  graphs.reduce(
+    (merged, graph) => ({
+      sessions: { ...merged.sessions, ...graph.sessions },
+      agents: { ...merged.agents, ...graph.agents },
+      tools: { ...merged.tools, ...graph.tools },
+    }),
+    emptyGraph(),
+  );

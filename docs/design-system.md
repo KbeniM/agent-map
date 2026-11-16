@@ -4,6 +4,7 @@ A minimal, Apple-inspired interface in light and dark. The 3D map is the product
 
 - **Tokens** (colour, radius, type) live in `apps/web/src/styles.css`. The map reads its colours from the `--graph-*` tokens at runtime.
 - **Components:** shadcn (radix base, maia preset) in `apps/web/src/components/ui/`, added with `bunx shadcn add`. App components sit in `apps/web/src/components/`.
+- **Icons:** Hugeicons (`@hugeicons/react` with `@hugeicons/core-free-icons`) for every interface and tool glyph; tool glyphs are mapped in `lib/icons.ts`. Provider logos come from `@lobehub/icons-static-svg`.
 
 ## 1. Light and dark
 
@@ -15,6 +16,7 @@ A minimal, Apple-inspired interface in light and dark. The 3D map is the product
 
 - No status badges, pills or chips. State is plain text (`running`, `2m ago`) or a colour on the text itself.
 - No counters, charts or panels nobody asked for. A panel shows the selected thing and nothing else.
+- Settings are one floating panel with three tabs (Harnesses, Bridges, Display). Each control saves on change; a form with several fields shows Save only once it is dirty.
 - No decorative motion. Particles and a breathing halo mean something is running; nothing moves for its own sake.
 
 ## 3. Colour tokens

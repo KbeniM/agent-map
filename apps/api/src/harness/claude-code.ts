@@ -1,4 +1,9 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { AgentEvent } from "@agent-map/shared/events";
+import type { Adapter, FileSource } from "./adapter";
+import { hookParser } from "./hooks";
+import { summarize } from "./pairing";
 
 type Block = {
   type?: string;
@@ -18,15 +23,6 @@ type Line = {
 };
 
 export type Cursor = { sessionId: string; agentId: string; started: boolean };
-
-const SUMMARY_KEYS = ["description", "file_path", "pattern", "command", "url", "query", "prompt", "skill"];
-
-// why: only one short field of the tool input leaves the bridge, never the full input or output
-export function summarize(input: Record<string, unknown> | undefined) {
-  const key = SUMMARY_KEYS.find((name) => typeof input?.[name] === "string");
-  const value = key ? String(input?.[key]) : undefined;
-  return value?.split("\n")[0].slice(0, 120);
-}
 
 const promptText = (content: string | Block[] | undefined) => {
   const text = typeof content === "string" ? content : content?.find((block) => block.type === "text")?.text;
@@ -65,6 +61,16 @@ function message(line: Line, { sessionId, agentId }: Cursor, at: string): AgentE
   return [{ type: "message", sessionId, at, agentId, role, text: text.slice(0, MESSAGE_MAX), model }];
 }
 
+// why: a subagent's hand-back call ends its run, so no tool_result ever follows it in the transcript
+function handback(blocks: Block[], { sessionId, agentId }: Cursor, at: string): AgentEvent[] {
+  const call = blocks.find((block) => block.type === "tool_use" && block.name === HANDBACK && block.id);
+  if (!call?.id) return [];
+  return [
+    { type: "tool.finished", sessionId, at, toolId: call.id, ok: true },
+    { type: "agent.stopped", sessionId, at, agentId },
+  ];
+}
+
 function blockEvent(block: Block, { sessionId, agentId }: Cursor, at: string): AgentEvent | undefined {
   if (block.type === "tool_use" && block.id && block.name) {
     return {
@@ -94,16 +100,48 @@ export function parseLine(raw: string, cursor: Cursor): AgentEvent[] {
   const content = line.message?.content;
   const blocks = Array.isArray(content) ? content : [];
   const tools = blocks.map((block) => blockEvent(block, cursor, at)).filter((event) => event !== undefined);
-  return [...opening(line, cursor, at), ...message(line, cursor, at), ...tools];
+  return [...opening(line, cursor, at), ...message(line, cursor, at), ...tools, ...handback(blocks, cursor, at)];
 }
 
-export type SubagentMeta = { agentType?: string; description?: string; toolUseId?: string };
+type SubagentMeta = { agentType?: string; description?: string; toolUseId?: string };
 
-export const subagentStarted = (cursor: Cursor, meta: SubagentMeta, at: string): AgentEvent => ({
-  type: "agent.started",
-  sessionId: cursor.sessionId,
-  agentId: cursor.agentId,
-  at,
-  name: meta.agentType || "agent",
-  parentToolId: meta.toolUseId,
-});
+const MAIN = /^[^/]+\/([^/]+)\.jsonl$/;
+const SUBAGENT = /^[^/]+\/([^/]+)\/subagents\/agent-([^/]+)\.jsonl$/;
+
+async function readMeta(path: string): Promise<SubagentMeta> {
+  const file = Bun.file(path.replace(/\.jsonl$/, ".meta.json"));
+  return (await file.exists()) ? file.json().catch(() => ({})) : {};
+}
+
+const transcripts: FileSource<Cursor> = {
+  defaultPath: join(homedir(), ".claude", "projects"),
+  // why: main transcripts scan first, so a subagent's spawning tool call is known before the subagent
+  globs: ["*/*.jsonl", "*/*/subagents/agent-*.jsonl"],
+  mode: "append",
+  async open(relative, absolute, mtime) {
+    const main = MAIN.exec(relative);
+    if (main) return { state: { sessionId: main[1], agentId: main[1], started: false } };
+    const sub = SUBAGENT.exec(relative);
+    if (!sub) return undefined;
+    const meta = await readMeta(absolute);
+    const state = { sessionId: sub[1], agentId: sub[2], started: true };
+    const started: AgentEvent = {
+      type: "agent.started",
+      sessionId: state.sessionId,
+      agentId: state.agentId,
+      at: mtime.toISOString(),
+      name: meta.agentType || "agent",
+      parentToolId: meta.toolUseId,
+    };
+    return { state, events: [started] };
+  },
+  parse: (text, state) => text.split("\n").flatMap((line) => (line ? parseLine(line, state) : [])),
+};
+
+export const claudeCode: Adapter = {
+  id: "claude-code",
+  name: "Claude Code",
+  harness: "claude-code",
+  files: transcripts,
+  hook: hookParser("claude-code"),
+};

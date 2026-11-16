@@ -17,6 +17,7 @@ export const agentEventSchema = z.discriminatedUnion("type", [
     agentId: id,
     name: z.string().min(1).max(120),
     parentToolId: id.optional(),
+    parentAgentId: id.optional(),
     model: z.string().max(120).optional(),
   }),
   z.object({ type: z.literal("agent.stopped"), ...base, agentId: id }),

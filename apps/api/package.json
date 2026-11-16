@@ -1,6 +1,7 @@
 {
   "name": "@agent-map/api",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": "./src/app.ts"
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "@agent-map/shared": "workspace:*",
+    "@hono/bun": "1.0.1",
     "@hono/zod-validator": "0.9.1",
     "hono": "4.13.19",
     "zod": "4.6.7"

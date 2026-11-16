@@ -13,9 +13,9 @@ Before you touch an area, read its document. Read only the matching ones. Each r
 | Touching | Read | Key rules |
 | --- | --- | --- |
 | Any code or test | [`docs/coding-standards.md`](docs/coding-standards.md) | Comments, `type` not `kind`, `tests/` folders, malformed-input cases per route, mutation and e2e |
-| Bridge, events, harness adapters, stream | [`docs/architecture.md`](docs/architecture.md) | One event schema in `packages/shared`, web never reads harness files |
+| Bridge, events, harness adapters, stream | [`docs/architecture.md`](docs/architecture.md), [`docs/research/harness-formats.md`](docs/research/harness-formats.md) | One event schema in `packages/shared`, web never reads harness files, verify a harness format before mapping it |
 | UI, styling, components, the 3D map | [`docs/design-system.md`](docs/design-system.md) | Light and dark, system by default, semantic tokens, shadcn in `components/ui`, no status badges or pills |
-| Exposure, CORS, what leaves the bridge | [`docs/auth-and-security.md`](docs/auth-and-security.md) | Loopback only, no auth, one summary field per tool call, messages capped |
+| Exposure, tokens, CORS, what leaves the bridge | [`docs/auth-and-security.md`](docs/auth-and-security.md) | Token required off loopback, one summary field per tool call, messages capped |
 | Vite, TanStack Router and Query, Zustand | [`docs/framework-conventions.md`](docs/framework-conventions.md) | File routes, Hono RPC, Zustand for the live map |
 | UI copy, names, domain terms | [`GLOSSARY.md`](GLOSSARY.md) | Use the glossary term, never an `_Avoid_` word |
 | A decision or a trade-off | [`docs/adr/`](docs/adr/) | Flag a conflict with an ADR instead of overriding it |

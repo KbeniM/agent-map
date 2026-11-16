@@ -1,19 +1,20 @@
+import { ComputerIcon, Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "cn";
-import { Monitor, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type Theme, usePreferences, type View } from "@/stores/preferences";
 
-const THEMES: Record<Theme, { next: Theme; icon: typeof Sun; label: string }> = {
-  system: { next: "light", icon: Monitor, label: "System" },
-  light: { next: "dark", icon: Sun, label: "Light" },
-  dark: { next: "system", icon: Moon, label: "Dark" },
+const THEMES: Record<Theme, { next: Theme; icon: typeof Sun03Icon; label: string }> = {
+  system: { next: "light", icon: ComputerIcon, label: "System" },
+  light: { next: "dark", icon: Sun03Icon, label: "Light" },
+  dark: { next: "system", icon: Moon02Icon, label: "Dark" },
 };
 
 const VIEWS: View[] = ["2d", "3d"];
 
 export function MapControls() {
   const { theme, view, setTheme, setView } = usePreferences();
-  const { next, icon: Icon, label } = THEMES[theme];
+  const { next, icon, label } = THEMES[theme];
 
   return (
     <div className="glass absolute top-4 right-4 flex items-center gap-1 rounded-full p-1">
@@ -48,7 +49,7 @@ export function MapControls() {
         onClick={() => setTheme(next)}
         className="active:scale-90"
       >
-        <Icon key={theme} className="animate-in fade-in spin-in-45 duration-300" />
+        <HugeiconsIcon key={theme} icon={icon} className="animate-in fade-in spin-in-45 duration-300" />
       </Button>
     </div>
   );

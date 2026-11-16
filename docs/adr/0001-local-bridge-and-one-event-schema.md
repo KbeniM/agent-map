@@ -5,3 +5,5 @@ The browser cannot read harness files, and every harness records agents differen
 SSE over WebSockets: the stream is one-way, `EventSource` reconnects on its own and sends `Last-Event-ID`, so resuming needs no client code.
 
 Considered: a hosted relay (needs auth and sends tool activity off the machine), WebSockets (two-way channel nobody needs), one schema per harness in the web app (every harness change becomes a UI change).
+
+Amended by ADR-0004: a bridge may also be hosted, behind a bearer token.

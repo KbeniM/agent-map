@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { type Cursor, parseLine, summarize } from "../../src/harness/claude-code";
+import { type Cursor, parseLine } from "../../src/harness/claude-code";
+import { summarize } from "../../src/harness/pairing";
 
 const at = "2026-11-16T10:00:00.000Z";
 const main = (): Cursor => ({ sessionId: "s1", agentId: "s1", started: false });

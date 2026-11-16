@@ -1,11 +1,12 @@
 import type { Provider } from "@agent-map/shared/providers";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "cn";
-import { Bot } from "lucide-react";
-import { isMonoLogo, providerSvg, toolIcon } from "@/lib/icons";
+import { AGENT_ICON, isMonoLogo, providerSvg, toolIcon } from "@/lib/icons";
 
 export function ProviderIcon({ provider, className }: { provider: Provider; className?: string }) {
   const svg = providerSvg(provider, "black");
-  if (!svg) return <Bot aria-hidden className={cn("size-4 text-muted-foreground", className)} />;
+  if (!svg)
+    return <HugeiconsIcon icon={AGENT_ICON} aria-hidden className={cn("size-4 text-muted-foreground", className)} />;
   return (
     <img
       alt=""
@@ -16,6 +17,12 @@ export function ProviderIcon({ provider, className }: { provider: Provider; clas
 }
 
 export function ToolIcon({ name, className }: { name: string; className?: string }) {
-  const Icon = toolIcon(name);
-  return <Icon aria-hidden className={cn("size-3.5 shrink-0 text-muted-foreground", className)} />;
+  return (
+    <HugeiconsIcon
+      icon={toolIcon(name)}
+      aria-hidden
+      strokeWidth={1.75}
+      className={cn("size-3.5 shrink-0 text-muted-foreground", className)}
+    />
+  );
 }

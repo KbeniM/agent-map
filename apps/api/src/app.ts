@@ -1,31 +1,75 @@
+import { bridgeSettingsPatchSchema } from "@agent-map/shared/config";
 import { ingestSchema } from "@agent-map/shared/events";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { bearerAuth } from "hono/bearer-auth";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
-import { env } from "./env";
-import { publish } from "./events/log";
+import { HTTPException } from "hono/http-exception";
+import { z } from "zod";
+import type { Store } from "./events/store";
+import { InvalidPayload } from "./harness/adapter";
 import { stream } from "./http/stream";
+import type { Runtime } from "./runtime";
 
-type Watcher = () => { dir: string; sessions: number };
+type Options = { store: Store; runtime: Runtime; token: string; origins: string[]; version: string };
 
-export function createApp(claudeCode: Watcher) {
-  const pushed = new Set<string>();
-  return new Hono()
-    .use("/v1/*", cors({ origin: env.WEB_ORIGIN }))
-    .get("/v1/harnesses", (c) =>
-      c.json([
-        { id: "claude-code", name: "Claude Code", source: claudeCode().dir, sessions: claudeCode().sessions },
-        { id: "http", name: "Any harness", source: "POST /v1/events", sessions: pushed.size },
-      ]),
+const MAX_BODY = 5 * 1024 * 1024;
+const idParam = z.object({ id: z.string().min(1).max(200) });
+const adapterParam = z.object({ adapter: z.string().regex(/^[a-z0-9-]{1,60}$/) });
+const hookQuery = z.object({
+  event: z
+    .string()
+    .regex(/^[A-Za-z_]{1,60}$/)
+    .optional(),
+});
+const tooLarge = bodyLimit({ maxSize: MAX_BODY, onError: (c) => c.json({ error: "Body too large" }, 413) });
+
+export function createApp({ store, runtime, token, origins, version }: Options) {
+  const app = new Hono()
+    .use("/v1/*", cors({ origin: origins, allowHeaders: ["authorization", "content-type", "last-event-id"] }))
+    .get("/v1/health", (c) => c.json({ ok: true, version }))
+    .use("/v1/*", async (c, next) => (token ? bearerAuth({ token })(c, next) : next()))
+    .get("/v1/adapters", (c) => c.json(runtime.info()))
+    .get("/v1/settings", (c) => c.json(runtime.settings()))
+    .patch("/v1/settings", tooLarge, zValidator("json", bridgeSettingsPatchSchema), async (c) =>
+      c.json(await runtime.update(c.req.valid("json"))),
     )
-    .post("/v1/events", zValidator("json", ingestSchema), (c) => {
+    .post("/v1/events", tooLarge, zValidator("json", ingestSchema), (c) => {
       const body = c.req.valid("json");
       const events = Array.isArray(body) ? body : [body];
-      for (const event of events) pushed.add(event.sessionId);
-      publish(events);
-      return c.json({ accepted: events.length }, 202);
+      return c.json({ accepted: store.publish(events) }, 202);
     })
-    .get("/v1/stream", stream);
+    .post(
+      "/v1/hooks/:adapter",
+      tooLarge,
+      zValidator("param", adapterParam),
+      zValidator("query", hookQuery),
+      async (c) => {
+        const payload = await c.req.json().catch(() => {
+          throw new HTTPException(400, { message: "Malformed JSON" });
+        });
+        if (typeof payload !== "object" || payload === null)
+          throw new HTTPException(400, { message: "Expected an object" });
+        // why: some harnesses (Copilot CLI) only name the event in the hook config, so it travels as ?event=
+        const event = c.req.valid("query").event;
+        const events = runtime.hook(c.req.valid("param").adapter, event ? { ...payload, hookEvent: event } : payload);
+        if (!events) return c.json({ error: "Unknown or disabled adapter" }, 404);
+        return c.json({ accepted: store.publish(events) }, 202);
+      },
+    )
+    .delete("/v1/sessions/:id", zValidator("param", idParam), (c) =>
+      c.json({ removed: store.forget(c.req.valid("param").id) }),
+    )
+    .get("/v1/stream", stream(store));
+
+  app.onError((error, c) => {
+    if (error instanceof HTTPException) return error.getResponse();
+    if (error instanceof InvalidPayload) return c.json({ error: error.message }, 400);
+    console.error(error);
+    return c.json({ error: "Internal error" }, 500);
+  });
+  return app;
 }
 
 export type AppType = ReturnType<typeof createApp>;

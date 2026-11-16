@@ -25,6 +25,31 @@ test("selecting a session shows its subagent and tool calls", async ({ page }) =
   await expect(details.getByText("Payments live in src/pay.ts")).toBeVisible();
 });
 
+test("a hook payload from Claude Code appears live", async ({ page, request }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /Add a checkout page/ })).toBeVisible();
+  const hook = (body: object) => request.post(`${BRIDGE}/v1/hooks/claude-code`, { data: body });
+  expect(
+    (
+      await hook({
+        session_id: "cloud-1",
+        hook_event_name: "SessionStart",
+        session_title: "Cloud refactor",
+        model: "claude-opus-5",
+      })
+    ).status(),
+  ).toBe(202);
+  await hook({
+    session_id: "cloud-1",
+    hook_event_name: "PreToolUse",
+    tool_name: "Bash",
+    tool_use_id: "h1",
+    tool_input: { command: "bun test" },
+  });
+  await page.getByRole("link", { name: /Cloud refactor/ }).click();
+  await expect(page.getByRole("region", { name: "Details" }).getByText("bun test")).toBeVisible();
+});
+
 test("a pushed event from any harness appears live", async ({ page, request }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: /Add a checkout page/ })).toBeVisible();
@@ -40,12 +65,65 @@ test("a pushed event from any harness appears live", async ({ page, request }) =
   await expect(page.getByRole("region", { name: "Details" }).getByText("running")).toBeVisible();
 });
 
-test("connect lists the harnesses the bridge reads", async ({ page }) => {
-  await page.goto("/connect");
-  const panel = page.getByRole("region", { name: "Connect" });
-  await expect(panel.getByText("Claude Code")).toBeVisible();
-  await expect(panel.getByText("e2e/fixtures/projects")).toBeVisible();
-  await expect(panel.getByText("Any harness")).toBeVisible();
+test("settings list every harness with its setup, and the bridge can be renamed", async ({ page }) => {
+  await page.goto("/settings");
+  const panel = page.getByRole("region", { name: "Settings" });
+  await expect(panel.getByText("Claude Code", { exact: true })).toBeVisible();
+  for (const name of [
+    "Codex",
+    "Cursor",
+    "GitHub Copilot CLI",
+    "Gemini CLI",
+    "Grok Build",
+    "Antigravity",
+    "OpenCode",
+    "Cline",
+    "Windsurf",
+  ]) {
+    await expect(panel.getByText(name, { exact: true })).toBeVisible();
+  }
+  await panel.getByRole("listitem").filter({ hasText: "Cursor" }).getByRole("button", { name: "Set up" }).click();
+  await expect(panel.getByText("~/.cursor/hooks.json")).toBeVisible();
+
+  await panel.getByRole("tab", { name: "Bridges" }).click();
+  await panel.getByRole("button", { name: "Edit" }).click();
+  await panel.getByLabel("Name").fill("Laptop");
+  await panel.getByRole("button", { name: "Save" }).click();
+  await expect(panel.getByText("Laptop")).toBeVisible();
+  await expect(panel.getByText("Connected")).toBeVisible();
+});
+
+test("a bridge with a wrong URL is reported and its form validates", async ({ page }) => {
+  await page.goto("/settings?tab=bridges");
+  const panel = page.getByRole("region", { name: "Settings" });
+  await panel.getByRole("button", { name: "Add bridge" }).click();
+  await panel.getByLabel("Name").fill("Cloud");
+  await panel.getByLabel("URL").fill("not a url");
+  await panel.getByRole("button", { name: "Save" }).click();
+  await expect(panel.getByText("Use an http(s) URL")).toBeVisible();
+});
+
+test("filters narrow the session list", async ({ page }) => {
+  await page.goto("/");
+  const sessions = page.getByRole("region", { name: "Sessions" });
+  await expect(sessions.getByRole("link", { name: /Add a checkout page/ })).toBeVisible();
+  await sessions.getByLabel("Search sessions").fill("nothing like this");
+  await expect(sessions.getByText("No session matches the filters.")).toBeVisible();
+  await sessions.getByLabel("Search sessions").fill("checkout");
+  await expect(sessions.getByRole("link", { name: /Add a checkout page/ })).toBeVisible();
+});
+
+test("removing a session deletes it from the bridge", async ({ page, request }) => {
+  const at = new Date().toISOString();
+  await request.post(`${BRIDGE}/v1/events`, {
+    data: { type: "session.started", sessionId: "doomed", harness: "custom", title: "Throwaway run", at },
+  });
+  await page.goto("/");
+  await page.getByRole("link", { name: /Throwaway run/ }).click();
+  const details = page.getByRole("region", { name: "Details" });
+  await details.getByRole("button", { name: "Remove session" }).click();
+  await details.getByRole("button", { name: "Remove", exact: true }).click();
+  await expect(page.getByRole("link", { name: /Throwaway run/ })).toHaveCount(0);
 });
 
 test("the theme follows the system until the toggle picks one", async ({ page }) => {

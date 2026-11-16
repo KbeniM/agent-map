@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 const BRIDGE = "http://localhost:4100";
@@ -28,12 +30,13 @@ export default defineConfig({
   webServer: [
     {
       command: "bun apps/api/src/index.ts",
-      url: `${BRIDGE}/v1/harnesses`,
+      url: `${BRIDGE}/v1/health`,
       reuseExistingServer: false,
       env: {
         BRIDGE_PORT: "4100",
         WEB_ORIGIN: WEB,
-        CLAUDE_PROJECTS_DIR: "e2e/fixtures/projects",
+        CLAUDE_CODE_PATH: "e2e/fixtures/projects",
+        DATA_DIR: join(tmpdir(), `agent-map-e2e-${Date.now()}`),
         SINCE_HOURS: "1000000",
       },
     },

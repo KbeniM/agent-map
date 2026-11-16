@@ -2,15 +2,19 @@ import type { Agent, Graph, Message, Tool } from "@agent-map/shared/graph";
 import { parentOf } from "@agent-map/shared/graph";
 import { nodeId } from "@agent-map/shared/layout";
 import { providerOf } from "@agent-map/shared/providers";
-import { Link } from "@tanstack/react-router";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { cn } from "cn";
-import { X } from "lucide-react";
+import { useState } from "react";
 import { ProviderIcon, ToolIcon } from "@/components/icons";
 import { Panel } from "@/components/panel";
 import { Button } from "@/components/ui/button";
+import { client, unwrap } from "@/lib/api";
 import { PROVIDER_NAMES } from "@/lib/icons";
 import { duration, useNow } from "@/lib/time";
-import { useGraph } from "@/stores/graph";
+import { useGraph, useSessionBridge } from "@/stores/graph";
+import { usePreferences } from "@/stores/preferences";
 
 type Entry = { at: string; tool?: Tool; message?: Message };
 
@@ -62,6 +66,44 @@ function subtitle(graph: Graph, agent: Agent) {
   return [`Subagent of ${of}`, agent.model].filter(Boolean).join(" · ");
 }
 
+function RemoveSession({ sessionId }: { sessionId: string }) {
+  const [confirming, setConfirming] = useState(false);
+  const [failure, setFailure] = useState<string>();
+  const bridgeOf = useSessionBridge();
+  const bridges = usePreferences((state) => state.bridges);
+  const navigate = useNavigate();
+  const bridge = bridges.find((candidate) => candidate.id === bridgeOf(sessionId));
+  if (!bridge) return null;
+  const remove = async () => {
+    try {
+      await unwrap(client(bridge).v1.sessions[":id"].$delete({ param: { id: sessionId } }));
+      void navigate({ to: "/", search: {} });
+    } catch (error) {
+      setFailure((error as Error).message);
+    }
+  };
+  return (
+    <div className="flex items-center gap-2 px-5 pt-2 pb-4">
+      {confirming ? (
+        <>
+          <span className="type-caption flex-1 text-muted-foreground">Remove its history from {bridge.name}?</span>
+          <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+            Keep
+          </Button>
+          <Button variant="destructive" size="sm" onClick={remove}>
+            Remove
+          </Button>
+        </>
+      ) : (
+        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setConfirming(true)}>
+          Remove session
+        </Button>
+      )}
+      {failure && <span className="type-caption text-destructive">{failure}</span>}
+    </div>
+  );
+}
+
 function titleOf(graph: Graph, agent: Agent, tool?: Tool) {
   if (tool) return tool.name;
   return agent.id === agent.sessionId ? graph.sessions[agent.sessionId]?.title : agent.name;
@@ -107,7 +149,9 @@ function AgentDetail({ graph, agent, now }: { graph: Graph; agent: Agent; now: n
               >
                 <ProviderIcon provider={providerOf(child.model, session?.harness)} className="size-3.5" />
                 <span className="flex-1">{child.name}</span>
-                <span className="type-micro text-muted-foreground">{child.toolIds.length} tools</span>
+                <span className="type-micro text-muted-foreground">
+                  {child.toolIds.length} {child.toolIds.length === 1 ? "tool" : "tools"}
+                </span>
               </Link>
             </li>
           ))}
@@ -134,7 +178,7 @@ function AgentDetail({ graph, agent, now }: { graph: Graph; agent: Agent; now: n
 }
 
 export function NodePanel({ id }: { id: string }) {
-  const graph = useGraph((state) => state.graph);
+  const graph = useGraph();
   const now = useNow(1000);
   const found = resolve(graph, id);
   if (!found?.agent) return null;
@@ -157,7 +201,7 @@ export function NodePanel({ id }: { id: string }) {
         </div>
         <Button asChild variant="ghost" size="icon-sm" aria-label="Close">
           <Link to="/" search={{}}>
-            <X />
+            <HugeiconsIcon icon={Cancel01Icon} />
           </Link>
         </Button>
       </div>
@@ -166,6 +210,7 @@ export function NodePanel({ id }: { id: string }) {
       ) : (
         <AgentDetail graph={graph} agent={agent} now={now} />
       )}
+      {!tool && agent.id === agent.sessionId && <RemoveSession sessionId={agent.sessionId} />}
     </Panel>
   );
 }
