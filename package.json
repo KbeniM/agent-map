@@ -9,6 +9,8 @@
     "prepare": "git config core.hooksPath .githooks",
     "dev": "bun run --filter '@agent-map/api' --filter '@agent-map/web' dev",
     "demo": "bun --env-file=.env scripts/demo.ts",
+    "desktop": "bun run --cwd apps/desktop dev",
+    "desktop:build": "bun run --cwd apps/desktop build",
     "build": "bun run --filter '@agent-map/web' build",
     "typecheck": "bun run --filter '*' typecheck",
     "check": "biome check . && bun scripts/lint.ts",

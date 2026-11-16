@@ -1,6 +1,10 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { serveStatic } from "@hono/bun";
+// @ts-expect-error a file embedded with { type: "file" } has no TypeScript type; Bun resolves it to a path string
+import forwarder from "../bin/agent-map-hook" with { type: "file" };
+// @ts-expect-error a file embedded with { type: "file" } has no TypeScript type; Bun resolves it to a path string
+import plugin from "../bin/opencode-plugin.js" with { type: "file" };
 import pkg from "../package.json";
 import { createApp } from "./app";
 import { env } from "./env";
@@ -25,8 +29,12 @@ const runtime = createRuntime({
 const stop = await runtime.start();
 const app = createApp({ store, runtime, token: env.AGENT_MAP_TOKEN, origins: env.origins, version: pkg.version });
 
-app.get("/hook.sh", serveStatic({ path: join(import.meta.dir, "../bin/agent-map-hook") }));
-app.get("/opencode-plugin.js", serveStatic({ path: join(import.meta.dir, "../bin/opencode-plugin.js") }));
+// why: the files are embedded so the compiled desktop sidecar serves them without a repo checkout beside it
+app.get("/hook.sh", () => new Response(Bun.file(forwarder), { headers: { "content-type": "text/x-shellscript" } }));
+app.get(
+  "/opencode-plugin.js",
+  () => new Response(Bun.file(plugin), { headers: { "content-type": "text/javascript" } }),
+);
 if (env.STATIC_DIR) {
   const page = serveStatic({ path: join(env.STATIC_DIR, "index.html") });
   app.use("/*", serveStatic({ root: env.STATIC_DIR }));

@@ -1,0 +1,18 @@
+[package]
+name = "agent-map"
+version = "0.1.0"
+description = "A live 3D map of your coding-agent sessions"
+license = "MIT"
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "agent_map_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.7.5", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.6", features = [] }
+tauri-plugin-shell = "=2.6.0"

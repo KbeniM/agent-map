@@ -17,6 +17,7 @@ Before you touch an area, read its document. Read only the matching ones. Each r
 | UI, styling, components, the 3D map | [`docs/design-system.md`](docs/design-system.md) | GitHub Primer tokens and Mona Sans, light/dark/high-contrast, shadcn restyled to Primer, no status badges or pills |
 | Exposure, tokens, CORS, what leaves the bridge | [`docs/auth-and-security.md`](docs/auth-and-security.md) | Token required off loopback, one summary field per tool call, messages capped |
 | Vite, TanStack Router and Query, Zustand | [`docs/framework-conventions.md`](docs/framework-conventions.md) | File routes, Hono RPC, Zustand for the live map |
+| The desktop app (Tauri) | [`docs/adr/0008-tauri-desktop-with-bridge-sidecar.md`](docs/adr/0008-tauri-desktop-with-bridge-sidecar.md) | The page never gets shell permissions; Rust starts the bridge sidecar |
 | UI copy, names, domain terms | [`GLOSSARY.md`](GLOSSARY.md) | Use the glossary term, never an `_Avoid_` word |
 | A decision or a trade-off | [`docs/adr/`](docs/adr/) | Flag a conflict with an ADR instead of overriding it |
 | Issues, tickets, triage | [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md), [`docs/agents/triage-labels.md`](docs/agents/triage-labels.md), [`docs/agents/domain.md`](docs/agents/domain.md) | GitHub issues via `gh` |
@@ -27,8 +28,12 @@ Versions live in `package.json` and scripts in its `scripts`. Do not copy either
 
 - [ponytail](.agents/skills/ponytail/SKILL.md) (full mode): every task. End with what was skipped or unverified and any material risk.
 - [fallow](.agents/skills/fallow/SKILL.md): callers, importers, blast radius, cleanup. Its task map says which command to run.
-- [apple-design](.agents/skills/apple-design/SKILL.md): motion and interaction on every UI task. The visual language is Primer (ADR-0007).
-- [better-interface](.agents/skills/better-interface/SKILL.md): review every UI change before it ships.
+- UI work, every time:
+  - [impeccable](.agents/skills/impeccable/SKILL.md) to shape, critique, audit and polish. [design-taste-frontend](.agents/skills/design-taste-frontend/SKILL.md) for taste and anti-slop checks.
+  - Emil Kowalski's skills for interaction and motion: [emil-design-eng](.agents/skills/emil-design-eng/SKILL.md), [apple-design](.agents/skills/apple-design/SKILL.md), [animate](.agents/skills/animate/SKILL.md), [gestures](.agents/skills/gestures/SKILL.md), [review-animations](.agents/skills/review-animations/SKILL.md), [break-ui](.agents/skills/break-ui/SKILL.md) and the rest under `.agents/skills/` from `emilkowalski/skills`.
+  - [better-interface](.agents/skills/better-interface/SKILL.md) reviews every UI change before it ships.
+  - The visual language is Primer (ADR-0007); a skill's aesthetic advice never overrides it.
+- Playwright verifies every UI change in a real browser: the `playwright` MCP server, or `bunx playwright` scripts. Check light and dark, 320px and a coarse pointer, reduced motion, and keyboard focus.
 
 Skills are pinned in `skills-lock.json`. `bunx skills experimental_install` restores them into `.agents/skills/`.
 

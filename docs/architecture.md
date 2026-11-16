@@ -25,7 +25,8 @@ Bun workspaces monorepo:
 agent-map/
 ├── apps/
 │   ├── web/        # Vite + React, TanStack Router and Query, Zustand, Tailwind 4, shadcn (src/, tests/)
-│   └── api/        # Bun + Hono bridge: harness adapters, SQLite store, SSE stream (src/, tests/, bin/ forwarder and plugin)
+│   ├── api/        # Bun + Hono bridge: harness adapters, SQLite store, SSE stream (src/, tests/, bin/ forwarder and plugin)
+│   └── desktop/    # Tauri 2 shell: webview on apps/web/dist, bridge compiled as a sidecar (src-tauri/)
 ├── packages/
 │   └── shared/     # Event schema, graph reducer, map layout (src/, tests/)
 ├── e2e/            # Playwright tests against recorded transcripts in e2e/fixtures
