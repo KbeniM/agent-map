@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Agent Map",
+  "version": "0.1.0",
+  "identifier": "dev.agentmap.desktop",
+  "build": {
+    "beforeDevCommand": "bun run --cwd ../web dev",
+    "beforeBuildCommand": "bun run --cwd ../web build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../../web/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Agent Map",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 720,
+        "minHeight": 480
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:* https:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; worker-src 'self' blob:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "A live 3D map of your coding-agent sessions",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "externalBin": ["binaries/agent-map-bridge"]
+  }
+}

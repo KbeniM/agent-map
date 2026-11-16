@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "fallow": {
+      "command": "bunx",
+      "args": ["fallow-mcp"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.85"]
+    }
+  }
+}

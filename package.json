@@ -1,0 +1,35 @@
+{
+  "name": "agent-map",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
+    "dev": "bun run --filter '@agent-map/api' --filter '@agent-map/web' dev",
+    "demo": "bun --env-file=.env scripts/demo.ts",
+    "desktop": "bun run --cwd apps/desktop dev",
+    "desktop:build": "bun run --cwd apps/desktop build",
+    "build": "bun run --filter '@agent-map/web' build",
+    "typecheck": "bun run --filter '*' typecheck",
+    "check": "biome check . && bun scripts/lint.ts",
+    "format": "biome check --write .",
+    "test": "bun test apps packages",
+    "verify": "bun run typecheck && bun run check && bun run test && bun run build",
+    "test:e2e": "playwright test",
+    "fallow": "fallow",
+    "mutation": "fallow mutation --concurrency 1",
+    "react-doctor": "react-doctor apps/web --no-telemetry"
+  },
+  "devDependencies": {
+    "@agent-map/shared": "workspace:*",
+    "@biomejs/biome": "2.6.6",
+    "@playwright/test": "1.65.0",
+    "@types/bun": "1.4.4",
+    "fallow": "3.42.0",
+    "react-doctor": "0.9.22",
+    "typescript": "7.0.2"
+  },
+  "packageManager": "bun@1.4.4"
+}

@@ -1,0 +1,15 @@
+#!/bin/sh
+# Forwards one hook payload from stdin to the agent-map bridge, then answers "{}" so the harness continues.
+# Usage in a harness hook config: agent-map-hook <adapter> [event]   (e.g. cursor, codex, copilot-cli preToolUse)
+# Env: AGENT_MAP_URL (default http://127.0.0.1:4000), AGENT_MAP_TOKEN (optional bearer token).
+adapter="${1:?usage: agent-map-hook <adapter>}"
+url="${AGENT_MAP_URL:-http://127.0.0.1:4000}/v1/hooks/$adapter${2:+?event=$2}"
+if [ -n "$AGENT_MAP_TOKEN" ]; then
+  curl -sS -m 2 -X POST "$url" -H "content-type: application/json" \
+    -H "authorization: Bearer $AGENT_MAP_TOKEN" --data-binary @- >/dev/null 2>&1
+else
+  curl -sS -m 2 -X POST "$url" -H "content-type: application/json" \
+    --data-binary @- >/dev/null 2>&1
+fi
+printf '{}\n'
+exit 0
