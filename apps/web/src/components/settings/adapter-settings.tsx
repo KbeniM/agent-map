@@ -1,4 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { FloppyDiskIcon, Settings02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { type AdapterInfo, type BridgeSettings, retentionSchema } from "@rancher/shared/config";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -88,6 +90,7 @@ function AdapterRow({
           {adapter.error && <span className="type-caption truncate text-destructive">{adapter.error}</span>}
         </div>
         <Button variant="ghost" size="sm" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <HugeiconsIcon icon={Settings02Icon} />
           Set up
         </Button>
         <Switch
@@ -148,6 +151,7 @@ function RetentionForm({
       ))}
       {form.formState.isDirty && (
         <Button type="submit" size="sm" className="mt-1">
+          <HugeiconsIcon icon={FloppyDiskIcon} />
           Save
         </Button>
       )}

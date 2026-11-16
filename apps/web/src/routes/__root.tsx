@@ -73,7 +73,7 @@ function Root() {
         >
           <AgentGraph selected={search.node} onSelect={(node) => navigate({ to: "/", search: node ? { node } : {} })} />
         </Suspense>
-        <header className="surface absolute top-0 left-0 z-10 flex h-10 items-stretch border-t-0 border-l-0 pointer-coarse:h-11">
+        <header className="surface absolute top-0 left-0 z-10 flex h-10 items-stretch border-t-0 border-l-0 pointer-coarse:h-11 sm:w-(--panel-left-width) sm:min-w-max">
           <div className="flex aspect-square items-center justify-center text-foreground">
             <SheepIcon className="size-7" />
             <span className="sr-only">Rancher</span>
@@ -117,6 +117,7 @@ function Root() {
                 <span className="max-sm:sr-only">Settings</span>
               </Link>
             </Button>
+            {(sessionsOpen || settingsOpen) && <Separator orientation="vertical" className="max-sm:hidden" />}
           </nav>
         </header>
         <MapControls />

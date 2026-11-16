@@ -1,14 +1,22 @@
 import {
   CheckListIcon,
+  ComputerIcon,
   ComputerTerminal01Icon,
+  CubeIcon,
   File01Icon,
   FileEditIcon,
   Globe02Icon,
+  LeftToRightListBulletIcon,
+  Menu01Icon,
   Message01Icon,
+  Moon02Icon,
   Plug01Icon,
   RoboticIcon,
   Search01Icon,
   SparklesIcon,
+  SquareIcon,
+  Sun03Icon,
+  ViewOffSlashIcon,
   Wrench01Icon,
 } from "@hugeicons/core-free-icons";
 import type { IconSvgElement } from "@hugeicons/react";
@@ -23,6 +31,7 @@ import mistral from "@lobehub/icons-static-svg/icons/mistral-color.svg?raw";
 import openai from "@lobehub/icons-static-svg/icons/openai.svg?raw";
 import qwen from "@lobehub/icons-static-svg/icons/qwen-color.svg?raw";
 import type { Provider } from "@rancher/shared/providers";
+import type { Theme, ToolDisplay, View } from "@/stores/preferences";
 
 const LOGOS: Record<Exclude<Provider, "unknown">, string> = {
   anthropic,
@@ -92,3 +101,11 @@ export function iconMarkup(icon: IconSvgElement, size: number, strokeWidth: numb
   });
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" color="white" stroke-width="${strokeWidth}" stroke="currentColor">${children.join("")}</svg>`;
 }
+
+export const THEME_ICONS: Record<Theme, IconSvgElement> = { system: ComputerIcon, light: Sun03Icon, dark: Moon02Icon };
+export const VIEW_ICONS: Record<View, IconSvgElement> = { "2d": SquareIcon, "3d": CubeIcon };
+export const TOOL_DISPLAY_ICONS: Record<ToolDisplay, IconSvgElement> = {
+  detailed: LeftToRightListBulletIcon,
+  simple: Menu01Icon,
+  off: ViewOffSlashIcon,
+};

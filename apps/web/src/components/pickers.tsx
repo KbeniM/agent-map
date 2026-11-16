@@ -1,6 +1,7 @@
 import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { cn } from "cn";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,
@@ -21,11 +22,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export type PickerItem = { value: string; label: string };
+export type PickerItem = { value: string; label: string; icon?: ReactNode };
+
+const OptionIcon = ({ icon }: { icon?: IconSvgElement }) =>
+  icon ? <HugeiconsIcon icon={icon} strokeWidth={1.75} className="size-3.5 shrink-0 text-muted-foreground" /> : null;
 
 export function OptionMenu<T extends string>({
   value,
   options,
+  icons,
   onChange,
   label,
   variant = "outline",
@@ -35,6 +40,7 @@ export function OptionMenu<T extends string>({
 }: {
   value: T;
   options: Record<T, string>;
+  icons?: Partial<Record<T, IconSvgElement>>;
   onChange: (value: T) => void;
   label: string;
   variant?: "outline" | "ghost";
@@ -51,7 +57,10 @@ export function OptionMenu<T extends string>({
           aria-label={label}
           className={cn("type-caption justify-between gap-2 font-normal normal-case tracking-normal", className)}
         >
-          <span className="truncate">{options[value]}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <OptionIcon icon={icons?.[value]} />
+            <span className="truncate">{options[value]}</span>
+          </span>
           <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} className="size-3.5 shrink-0 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
@@ -61,8 +70,9 @@ export function OptionMenu<T extends string>({
             <DropdownMenuRadioItem
               key={key}
               value={key}
-              className="type-caption font-normal normal-case tracking-normal"
+              className="type-caption gap-2 font-normal normal-case tracking-normal"
             >
+              <OptionIcon icon={icons?.[key as T]} />
               {text as string}
             </DropdownMenuRadioItem>
           ))}
@@ -111,8 +121,11 @@ export function SearchCombobox({
             />
           }
         >
-          <span className="truncate">
-            <ComboboxValue />
+          <span className="flex min-w-0 items-center gap-2">
+            {selected?.icon}
+            <span className="truncate">
+              <ComboboxValue />
+            </span>
           </span>
         </ComboboxTrigger>
       </div>
@@ -121,7 +134,8 @@ export function SearchCombobox({
         <ComboboxEmpty className="type-caption">{emptyText}</ComboboxEmpty>
         <ComboboxList>
           {(item: PickerItem) => (
-            <ComboboxItem key={item.value} value={item} className="type-caption">
+            <ComboboxItem key={item.value} value={item} className="type-caption gap-2">
+              {item.icon}
               {item.label}
             </ComboboxItem>
           )}

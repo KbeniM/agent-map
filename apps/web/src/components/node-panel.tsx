@@ -1,4 +1,11 @@
-import { ArrowDown02Icon, ArrowRight01Icon, Cancel01Icon, Copy01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowDown02Icon,
+  ArrowRight01Icon,
+  Cancel01Icon,
+  Copy01Icon,
+  Delete02Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { type Agent, type Graph, type Message, type Tool, toolOf } from "@rancher/shared/graph";
 import { nodeId } from "@rancher/shared/layout";
@@ -6,12 +13,12 @@ import { providerOf } from "@rancher/shared/providers";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { cn } from "cn";
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { reducedMotion } from "@/components/graph/camera";
 import { ProviderIcon, ToolIcon } from "@/components/icons";
 import { MarkdownText } from "@/components/markdown";
 import { Panel } from "@/components/panel";
 import { OptionMenu } from "@/components/pickers";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Item, ItemContent, ItemGroup, ItemMedia } from "@/components/ui/item";
@@ -20,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { client, unwrap } from "@/lib/api";
+import { TOOL_DISPLAY_ICONS } from "@/lib/icons";
 import { agentDetails, agentTrace, nodeSubtitle, nodeTitle, resolveNode } from "@/lib/inspector";
 import { duration, useNow } from "@/lib/time";
 import { useGraph, useSessionBridge } from "@/stores/graph";
@@ -73,51 +81,32 @@ const MessageRow = memo(function MessageRow({ message }: { message: Message }) {
 });
 
 function RemoveSession({ sessionId }: { sessionId: string }) {
-  const [confirming, setConfirming] = useState(false);
-  const [failure, setFailure] = useState<string>();
   const bridgeOf = useSessionBridge();
   const bridges = usePreferences((state) => state.bridges);
   const navigate = useNavigate();
   const bridge = bridges.find((candidate) => candidate.id === bridgeOf(sessionId));
   if (!bridge) return null;
   const remove = async () => {
-    try {
-      await unwrap(client(bridge).v1.sessions[":id"].$delete({ param: { id: sessionId } }));
-      void navigate({ to: "/", search: {} });
-    } catch (error) {
-      setFailure((error as Error).message);
-    }
+    await unwrap(client(bridge).v1.sessions[":id"].$delete({ param: { id: sessionId } }));
+    void navigate({ to: "/", search: {} });
   };
   return (
-    <>
-      <Separator />
-      <div className="flex shrink-0 flex-col gap-2 px-4 py-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {confirming ? (
-            <>
-              <span className="type-caption min-w-0 flex-1 text-muted-foreground">
-                Remove this session and its history from {bridge.name}? It cannot be restored.
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" size="sm" onClick={remove}>
-                Remove session
-              </Button>
-            </>
-          ) : (
-            <Button variant="destructive" size="sm" onClick={() => setConfirming(true)}>
-              Remove session
-            </Button>
-          )}
-        </div>
-        {failure && (
-          <Alert variant="destructive">
-            <AlertDescription>{failure}</AlertDescription>
-          </Alert>
-        )}
-      </div>
-    </>
+    <ConfirmDialog
+      title="Remove session"
+      description={`Remove this session and its history from ${bridge.name}? It cannot be restored.`}
+      action="Remove session"
+      onConfirm={remove}
+      trigger={
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Remove session"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
+          <HugeiconsIcon icon={Delete02Icon} />
+        </Button>
+      }
+    />
   );
 }
 
@@ -383,6 +372,7 @@ function AgentDetail({ graph, agent }: { graph: Graph; agent: Agent }) {
               value={toolDisplay}
               onChange={(next) => setDisplay({ toolDisplay: next })}
               options={{ detailed: "Tools: Detailed", simple: "Tools: Simple", off: "Tools: Off" }}
+              icons={TOOL_DISPLAY_ICONS}
             />
           </div>
           <CollapsibleContent>
@@ -484,6 +474,7 @@ export function NodePanel({ id }: { id: string }) {
               <TooltipContent>{copied ? "Copied trace JSON" : "Copy trace JSON"}</TooltipContent>
             </Tooltip>
           )}
+          {!tool && agent.id === agent.sessionId && <RemoveSession sessionId={agent.sessionId} />}
           <Button asChild variant="ghost" size="icon-sm" aria-label="Close" className="shrink-0">
             <Link to="/" search={{}}>
               <HugeiconsIcon icon={Cancel01Icon} />
@@ -500,7 +491,6 @@ export function NodePanel({ id }: { id: string }) {
       ) : (
         <AgentDetail graph={graph} agent={agent} />
       )}
-      {!tool && agent.id === agent.sessionId && <RemoveSession sessionId={agent.sessionId} />}
     </Panel>
   );
 }

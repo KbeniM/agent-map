@@ -1,7 +1,35 @@
+import {
+  AiChipIcon,
+  ArrowUpRight01Icon,
+  CircleIcon,
+  ColorsIcon,
+  CubeIcon,
+  DashboardSpeed01Icon,
+  FlowConnectionIcon,
+  GridIcon,
+  Layers01Icon,
+  LeftToRightListBulletIcon,
+  MaximizeScreenIcon,
+  MinimizeScreenIcon,
+  Move01Icon,
+  PaintBucketIcon,
+  Plug01Icon,
+  RefreshIcon,
+  Route01Icon,
+  SparklesIcon,
+  Tag01Icon,
+  Target02Icon,
+  TextIcon,
+  Time04Icon,
+  ViewOffSlashIcon,
+  Wrench01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { OptionMenu } from "@/components/pickers";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { THEME_ICONS, TOOL_DISPLAY_ICONS, VIEW_ICONS } from "@/lib/icons";
 import {
   type ColourBy,
   type GraphSpacing,
@@ -21,43 +49,47 @@ export function DisplaySettings() {
   return (
     <>
       <Section title="Appearance">
-        <Field label="Theme">
+        <Field icon={PaintBucketIcon} label="Theme">
           <OptionMenu<Theme>
             label="Theme"
             className="w-36"
             value={theme}
             onChange={setTheme}
             options={{ system: "System", light: "Light", dark: "Dark" }}
+            icons={THEME_ICONS}
           />
         </Field>
-        <Field label="View">
+        <Field icon={CubeIcon} label="View">
           <OptionMenu<View>
             label="View"
             className="w-36"
             value={view}
             onChange={setView}
             options={{ "3d": "3D", "2d": "2D" }}
+            icons={VIEW_ICONS}
           />
         </Field>
-        <Field label="Colour by" hint="Sphere colour on the map">
+        <Field icon={ColorsIcon} label="Colour by" hint="Sphere colour on the map">
           <OptionMenu<ColourBy>
             label="Colour by"
             className="w-36"
             value={display.colourBy}
             onChange={(colourBy) => setDisplay({ colourBy })}
             options={{ session: "Session", provider: "Provider", harness: "Harness" }}
+            icons={{ session: Layers01Icon, provider: AiChipIcon, harness: Plug01Icon }}
           />
         </Field>
-        <Field label="Node labels" hint="Titles shown below spheres">
+        <Field icon={Tag01Icon} label="Node labels" hint="Titles shown below spheres">
           <OptionMenu<LabelVisibility>
             label="Node labels"
             className="w-36"
             value={display.labels ?? "all"}
             onChange={(labels) => setDisplay({ labels })}
             options={{ all: "All agents", focus: "Live & selected", off: "Hidden" }}
+            icons={{ all: TextIcon, focus: Target02Icon, off: ViewOffSlashIcon }}
           />
         </Field>
-        <Field label="Live glow" hint="Pulse halos around active nodes">
+        <Field icon={SparklesIcon} label="Live glow" hint="Pulse halos around active nodes">
           <Switch
             aria-label="Live glow"
             checked={display.halos ?? true}
@@ -67,14 +99,18 @@ export function DisplaySettings() {
       </Section>
 
       <Section title="Links & Motion">
-        <Field label="Connector particles" hint="Flow along running links">
+        <Field icon={FlowConnectionIcon} label="Connector particles" hint="Flow along running links">
           <Switch
             aria-label="Connector particles"
             checked={display.particles}
             onCheckedChange={(particles) => setDisplay({ particles })}
           />
         </Field>
-        <Field label="Connector animation speed" hint={`${(particleSpeed / 0.004).toFixed(2)}× flow speed`}>
+        <Field
+          icon={DashboardSpeed01Icon}
+          label="Connector animation speed"
+          hint={`${(particleSpeed / 0.004).toFixed(2)}× flow speed`}
+        >
           <Slider
             aria-label="Connector animation speed"
             className="w-36"
@@ -86,21 +122,21 @@ export function DisplaySettings() {
             onValueChange={([next]) => setDisplay({ particleSpeed: next })}
           />
         </Field>
-        <Field label="Curved subagent links" hint="Bend spawn arcs between agents">
+        <Field icon={Route01Icon} label="Curved subagent links" hint="Bend spawn arcs between agents">
           <Switch
             aria-label="Curved subagent links"
             checked={display.curvedLinks ?? true}
             onCheckedChange={(curvedLinks) => setDisplay({ curvedLinks })}
           />
         </Field>
-        <Field label="Direction arrows" hint="Show flow direction at node rims">
+        <Field icon={ArrowUpRight01Icon} label="Direction arrows" hint="Show flow direction at node rims">
           <Switch
             aria-label="Direction arrows"
             checked={display.arrows ?? true}
             onCheckedChange={(arrows) => setDisplay({ arrows })}
           />
         </Field>
-        <Field label="Pan speed" hint={`${panSpeed.toFixed(1)}× right-drag sensitivity`}>
+        <Field icon={Move01Icon} label="Pan speed" hint={`${panSpeed.toFixed(1)}× right-drag sensitivity`}>
           <Slider
             aria-label="Pan speed"
             className="w-36"
@@ -114,16 +150,17 @@ export function DisplaySettings() {
       </Section>
 
       <Section title="Layout & Activity">
-        <Field label="Graph spacing" hint="Distance between nodes">
+        <Field icon={GridIcon} label="Graph spacing" hint="Distance between nodes">
           <OptionMenu<GraphSpacing>
             label="Graph spacing"
             className="w-36"
             value={display.spacing ?? "balanced"}
             onChange={(spacing) => setDisplay({ spacing })}
             options={{ compact: "Compact", balanced: "Balanced", spread: "Spread" }}
+            icons={{ compact: MinimizeScreenIcon, balanced: CircleIcon, spread: MaximizeScreenIcon }}
           />
         </Field>
-        <Field label="Tool calls per agent" hint={`${display.toolsPerAgent} latest on map`}>
+        <Field icon={Wrench01Icon} label="Tool calls per agent" hint={`${display.toolsPerAgent} latest on map`}>
           <Slider
             aria-label="Tool calls per agent"
             className="w-36"
@@ -134,16 +171,17 @@ export function DisplaySettings() {
             onValueChange={([toolsPerAgent]) => setDisplay({ toolsPerAgent })}
           />
         </Field>
-        <Field label="Tool calls" hint="Detail level in agent activity">
+        <Field icon={LeftToRightListBulletIcon} label="Tool calls" hint="Detail level in agent activity">
           <OptionMenu<ToolDisplay>
             label="Tool calls"
             className="w-36"
             value={display.toolDisplay ?? "detailed"}
             onChange={(toolDisplay) => setDisplay({ toolDisplay })}
             options={{ detailed: "Detailed", simple: "Simple", off: "Off" }}
+            icons={TOOL_DISPLAY_ICONS}
           />
         </Field>
-        <Field label="Live window" hint={`Active for ${display.liveSeconds} s after the last event`}>
+        <Field icon={Time04Icon} label="Live window" hint={`Active for ${display.liveSeconds} s after the last event`}>
           <Slider
             aria-label="Live window"
             className="w-36"
@@ -158,6 +196,7 @@ export function DisplaySettings() {
 
       <div className="pt-3">
         <Button variant="outline" size="sm" onClick={resetDisplay}>
+          <HugeiconsIcon icon={RefreshIcon} />
           Reset display defaults
         </Button>
       </div>

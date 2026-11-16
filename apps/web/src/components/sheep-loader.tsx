@@ -39,7 +39,7 @@ export function SheepLoader({ label, className }: { label?: string; className?: 
       aria-label={label ?? "Loading"}
       className={cn("flex flex-col items-center justify-center gap-2", className)}
     >
-      <svg viewBox="20 8 200 134" className="sheep-loader-scene w-28 overflow-visible" aria-hidden="true">
+      <svg viewBox="20 8 200 134" className="w-28 overflow-visible" aria-hidden="true">
         <defs>
           <mask id={sheepMaskId}>
             <rect x="0" y="0" width="38" height="28" fill="black" />
@@ -64,11 +64,11 @@ export function SheepLoader({ label, className }: { label?: string; className?: 
           </mask>
 
           <g id={sheepSymbolId}>
-            <rect x="0" y="0" width="38" height="28" fill="var(--loader-white)" mask={`url(#${sheepMaskId})`} />
+            <rect x="0" y="0" width="38" height="28" fill="var(--loader-fill)" mask={`url(#${sheepMaskId})`} />
           </g>
         </defs>
 
-        <g className="sheep-loader-wheel" fill="var(--loader-white)">
+        <g className="sheep-loader-wheel" fill="var(--loader-fill)">
           <circle cx="120" cy="98" r="32.5" />
           {GRASS_TUFTS.map((tuft) => (
             <path key={tuft.angle} transform={`rotate(${tuft.angle} 120 98)`} d={tuft.path} />

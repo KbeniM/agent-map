@@ -1,3 +1,5 @@
+import { PaintBoardIcon, Plug01Icon, ServerStack01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
@@ -33,6 +35,7 @@ function Harnesses() {
           align="start"
           value={bridge.id}
           options={options}
+          icons={Object.fromEntries(bridges.map((option) => [option.id, ServerStack01Icon]))}
           onChange={setSelected}
         />
       )}
@@ -55,9 +58,18 @@ function Settings() {
       >
         <div className="px-4 pt-3">
           <TabsList className="w-full">
-            <TabsTrigger value="harnesses">Harnesses</TabsTrigger>
-            <TabsTrigger value="bridges">Bridges</TabsTrigger>
-            <TabsTrigger value="display">Display</TabsTrigger>
+            <TabsTrigger value="harnesses">
+              <HugeiconsIcon icon={Plug01Icon} className="max-sm:hidden" />
+              Harnesses
+            </TabsTrigger>
+            <TabsTrigger value="bridges">
+              <HugeiconsIcon icon={ServerStack01Icon} className="max-sm:hidden" />
+              Bridges
+            </TabsTrigger>
+            <TabsTrigger value="display">
+              <HugeiconsIcon icon={PaintBoardIcon} className="max-sm:hidden" />
+              Display
+            </TabsTrigger>
           </TabsList>
         </div>
         <ScrollArea className="min-h-0 flex-1">

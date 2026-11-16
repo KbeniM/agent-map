@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import { type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, useRef, useState } from "react";
+import { type KeyboardEvent, type PointerEvent, type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import {
   clampPanelWidth,
   MAX_PANEL_WIDTH,
@@ -20,6 +20,15 @@ export function Panel({ side, children, label, wide }: Props) {
     undefined,
   );
   const width = dragWidth ?? storedWidth ?? (wide ? 448 : 320);
+
+  // why: the header sits outside the panel and reads the same variable, so both resize in the same frame
+  useLayoutEffect(() => {
+    const root = document.documentElement.style;
+    root.setProperty(`--panel-${side}-width`, `${width}px`);
+    return () => {
+      root.removeProperty(`--panel-${side}-width`);
+    };
+  }, [side, width]);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
@@ -56,12 +65,11 @@ export function Panel({ side, children, label, wide }: Props) {
   return (
     <section
       aria-label={label}
-      style={{ "--panel-width": `${width}px` } as CSSProperties}
       className={cn(
-        "surface animate-in fade-in duration-200 absolute bottom-0 flex max-w-full flex-col overflow-hidden sm:top-[calc(2.5rem-1px)] sm:w-(--panel-width) sm:pointer-coarse:top-[calc(2.75rem-1px)] max-sm:inset-x-0 max-sm:top-auto max-sm:max-h-[45dvh] max-sm:w-auto max-sm:border-x-0 max-sm:border-b-0",
+        "surface animate-in fade-in animation-duration-200 absolute bottom-0 flex max-w-full flex-col overflow-hidden max-sm:inset-x-0 max-sm:top-auto max-sm:max-h-[45dvh] max-sm:w-auto max-sm:border-x-0 max-sm:border-b-0",
         side === "left"
-          ? "left-0 border-b-0 border-l-0 slide-in-from-left-2"
-          : "right-0 border-b-0 border-r-0 slide-in-from-right-2",
+          ? "left-0 border-b-0 border-l-0 slide-in-from-left-2 sm:top-[calc(2.5rem-1px)] sm:w-(--panel-left-width) sm:pointer-coarse:top-[calc(2.75rem-1px)]"
+          : "right-0 border-b-0 border-r-0 slide-in-from-right-2 sm:top-0 sm:border-t-0 sm:w-(--panel-right-width)",
       )}
     >
       {children}
@@ -79,9 +87,10 @@ export function Panel({ side, children, label, wide }: Props) {
         onPointerCancel={finishDrag}
         onKeyDown={onKeyDown}
         className={cn(
-          "absolute inset-y-0 z-10 w-1.5 cursor-col-resize touch-none transition-colors hover:bg-ring/40 focus-visible:bg-ring/60 focus-visible:outline-none max-sm:hidden",
-          dragWidth !== undefined && "bg-ring/60",
-          side === "left" ? "right-0" : "left-0",
+          "group/resize absolute inset-y-0 z-10 w-2 cursor-col-resize touch-none focus-visible:outline-none max-sm:hidden",
+          "after:absolute after:inset-y-0 after:w-px after:bg-transparent after:transition-[width,background-color] after:duration-150 hover:after:w-0.5 hover:after:bg-ring focus-visible:after:w-0.5 focus-visible:after:bg-ring",
+          dragWidth !== undefined && "after:w-0.5 after:bg-ring",
+          side === "left" ? "right-0 after:right-0" : "left-0 after:left-0",
         )}
       />
     </section>

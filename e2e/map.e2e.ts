@@ -200,7 +200,7 @@ test("removing a session deletes it from the bridge", async ({ page, request }) 
   await page.getByRole("link", { name: /Throwaway run/ }).click();
   const details = page.getByRole("region", { name: "Details" });
   await details.getByRole("button", { name: "Remove session" }).click();
-  await details.getByRole("button", { name: "Remove session" }).last().click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Remove session" }).click();
   await expect(page.getByRole("link", { name: /Throwaway run/ })).toHaveCount(0);
 });
 

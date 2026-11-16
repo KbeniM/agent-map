@@ -1,4 +1,4 @@
-import { Search01Icon } from "@hugeicons/core-free-icons";
+import { AlertCircleIcon, Clock01Icon, Plug01Icon, Search01Icon, Wrench01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Session, Tool } from "@rancher/shared/graph";
 import { nodeId } from "@rancher/shared/layout";
@@ -28,8 +28,12 @@ function FilterBar({ harnesses }: { harnesses: string[] }) {
   const { filters, setFilters } = usePreferences();
   const harnessItems = useMemo(
     () => [
-      { value: "all", label: "All harnesses" },
-      ...harnesses.map((harness) => ({ value: harness, label: harness })),
+      { value: "all", label: "All harnesses", icon: <HugeiconsIcon icon={Plug01Icon} className="size-3.5 shrink-0" /> },
+      ...harnesses.map((harness) => ({
+        value: harness,
+        label: harness,
+        icon: <ProviderIcon provider={providerOf(undefined, harness)} className="size-3.5" />,
+      })),
     ],
     [harnesses],
   );
@@ -242,6 +246,7 @@ export function SessionsPanel({ selected }: { selected?: string }) {
             value={sort}
             onChange={(next) => setFilters({ sort: next })}
             options={{ recent: "Recent", tools: "Most tools", errors: "Most errors" }}
+            icons={{ recent: Clock01Icon, tools: Wrench01Icon, errors: AlertCircleIcon }}
           />
         )}
       </div>

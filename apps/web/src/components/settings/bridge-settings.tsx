@@ -1,7 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Add01Icon, Cancel01Icon, Delete02Icon, Edit02Icon, FloppyDiskIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { type BridgeConnection, bridgeConnectionSchema } from "@rancher/shared/config";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -53,9 +56,11 @@ function BridgeForm({ bridge, onDone }: { bridge?: Bridge; onDone: () => void })
           ))}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={onDone}>
+              <HugeiconsIcon icon={Cancel01Icon} />
               Cancel
             </Button>
             <Button type="submit" size="sm">
+              <HugeiconsIcon icon={FloppyDiskIcon} />
               Save
             </Button>
           </div>
@@ -89,12 +94,26 @@ function BridgeRow({ bridge, removable }: { bridge: Bridge; removable: boolean }
         </span>
       </div>
       <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+        <HugeiconsIcon icon={Edit02Icon} />
         Edit
       </Button>
       {removable && (
-        <Button variant="ghost" size="sm" onClick={() => removeBridge(bridge.id)}>
-          Remove
-        </Button>
+        <ConfirmDialog
+          title="Remove bridge"
+          description={`Stop following ${bridge.name} and forget its address and token? Its sessions stay on that bridge.`}
+          action="Remove bridge"
+          onConfirm={() => removeBridge(bridge.id)}
+          trigger={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <HugeiconsIcon icon={Delete02Icon} />
+              Remove
+            </Button>
+          }
+        />
       )}
       <Switch
         aria-label={`Connect to ${bridge.name}`}
@@ -122,6 +141,7 @@ export function BridgeSettings() {
         <BridgeForm onDone={() => setAdding(false)} />
       ) : (
         <Button size="sm" className="mt-2 self-start" onClick={() => setAdding(true)}>
+          <HugeiconsIcon icon={Add01Icon} />
           Add bridge
         </Button>
       )}

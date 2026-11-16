@@ -1,12 +1,4 @@
-import {
-  ComputerIcon,
-  MaximizeScreenIcon,
-  Moon02Icon,
-  PauseIcon,
-  PlayIcon,
-  RefreshIcon,
-  Sun03Icon,
-} from "@hugeicons/core-free-icons";
+import { MaximizeScreenIcon, PauseIcon, PlayIcon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { Fragment, useEffect } from "react";
@@ -15,13 +7,14 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { Separator } from "@/components/ui/separator";
 import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { THEME_ICONS } from "@/lib/icons";
 import { useMapStore } from "@/stores/map";
 import { type Theme, usePreferences, type View } from "@/stores/preferences";
 
-const THEMES: Record<Theme, { next: Theme; icon: typeof Sun03Icon; label: string }> = {
-  system: { next: "light", icon: ComputerIcon, label: "System" },
-  light: { next: "dark", icon: Sun03Icon, label: "Light" },
-  dark: { next: "system", icon: Moon02Icon, label: "Dark" },
+const THEMES: Record<Theme, { next: Theme; label: string }> = {
+  system: { next: "light", label: "System" },
+  light: { next: "dark", label: "Light" },
+  dark: { next: "system", label: "Dark" },
 };
 
 const VIEWS: View[] = ["2d", "3d"];
@@ -40,7 +33,8 @@ export function MapControls() {
   const { theme, view, setTheme, setView } = usePreferences();
   const { paused, togglePause, fit, reheat } = useMapStore();
   const navigate = useNavigate();
-  const { next, icon, label } = THEMES[theme];
+  const { next, label } = THEMES[theme];
+  const icon = THEME_ICONS[theme];
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -62,7 +56,7 @@ export function MapControls() {
   }, [fit, togglePause, navigate]);
 
   return (
-    <div className="surface absolute top-0 right-0 z-10 flex h-10 items-stretch border-t-0 border-r-0 pointer-coarse:h-11">
+    <div className="surface absolute bottom-0 left-1/2 z-10 flex h-10 -translate-x-1/2 items-stretch border-b-0 pointer-coarse:h-11 max-sm:top-[calc(2.5rem-1px)] max-sm:right-0 max-sm:bottom-auto max-sm:left-auto max-sm:translate-x-0 max-sm:border-r-0 max-sm:border-b max-sm:pointer-coarse:top-[calc(2.75rem-1px)]">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon" className="h-full w-10" aria-label="Fit graph" onClick={fit}>
@@ -103,7 +97,7 @@ export function MapControls() {
             {index > 0 && <Separator orientation="vertical" />}
             <Toggle
               variant="default"
-              className="h-full px-4"
+              className="h-full w-10 min-w-0 px-0"
               pressed={view === option}
               onPressedChange={(pressed) => {
                 if (pressed) setView(option);
