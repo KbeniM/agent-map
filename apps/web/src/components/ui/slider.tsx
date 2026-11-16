@@ -20,16 +20,16 @@ function Slider({
     >
       <SliderPrimitive.Track
         data-slot="slider-track"
-        className="relative h-1 grow overflow-hidden rounded-full bg-track"
+        className="relative h-1.5 grow overflow-hidden rounded-full bg-input"
       >
-        <SliderPrimitive.Range data-slot="slider-range" className="absolute h-full bg-accent-emphasis" />
+        <SliderPrimitive.Range data-slot="slider-range" className="absolute h-full rounded-full bg-primary" />
       </SliderPrimitive.Track>
       {Array.from({ length: thumbs }, (_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
           aria-label={label}
-          className="block size-4 rounded-full border border-[var(--fgColor-muted)] bg-knob pointer-coarse:size-6 shadow-[var(--shadow-resting-small)] transition-transform duration-[80ms] active:scale-110"
+          className="block size-4 rounded-full border border-primary/50 bg-background shadow-sm pointer-coarse:size-6 transition-transform duration-100 hover:scale-110 active:scale-115"
         />
       ))}
     </SliderPrimitive.Root>

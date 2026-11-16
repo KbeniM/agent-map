@@ -41,8 +41,8 @@ function CopyBlock({ snippet }: { snippet: Snippet }) {
     <div className="flex flex-col gap-1">
       <span className="type-caption text-muted-foreground">{snippet.title}</span>
       {snippet.content && (
-        <div className="overflow-hidden rounded-md border">
-          <div className="flex h-8 items-center justify-between border-b bg-canvas-muted pr-1 pl-3">
+        <div className="overflow-hidden rounded-xl border border-border/80">
+          <div className="flex h-8 items-center justify-between border-b border-border/70 bg-secondary/65 pr-1.5 pl-3">
             <span className="type-caption truncate font-mono text-muted-foreground">{snippet.file ?? "Terminal"}</span>
             <Button variant="ghost" size="icon-xs" aria-label={copied ? "Copied" : "Copy"} onClick={copy}>
               <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} className={copied ? "text-live" : undefined} />
@@ -53,7 +53,7 @@ function CopyBlock({ snippet }: { snippet: Snippet }) {
             tabIndex={0}
             role="region"
             aria-label={snippet.file ?? snippet.title}
-            className="type-caption max-h-56 overflow-auto overscroll-contain bg-background p-3 font-mono"
+            className="type-caption max-h-56 overflow-auto overscroll-contain bg-background/60 p-3 font-mono"
           >
             {snippet.content}
           </pre>

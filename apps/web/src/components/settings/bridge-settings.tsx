@@ -31,7 +31,10 @@ function BridgeForm({ bridge, onDone }: { bridge?: Bridge; onDone: () => void })
   const error = (name: keyof BridgeConnection) => form.formState.errors[name]?.message;
 
   return (
-    <form onSubmit={submit} className="my-2 flex flex-col gap-3 rounded-md border bg-canvas-muted p-3">
+    <form
+      onSubmit={submit}
+      className="my-2 flex flex-col gap-3 rounded-xl border border-border/80 bg-secondary/45 p-3.5"
+    >
       {(["name", "url", "token"] as const).map((name) => (
         <div key={name} className="flex flex-col gap-1">
           <Label htmlFor={`bridge-${name}`} className="type-caption text-muted-foreground capitalize">

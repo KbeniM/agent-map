@@ -1,4 +1,4 @@
-// why: Primer's data-visualisation palette is tuned per theme; red, green and blue stay out because they mean failed, live and message
+// why: tuned per theme in styles.css; red, green and blue stay out because they mean failed, live and message
 const PALETTE = ["purple", "pink", "teal", "plum", "lemon", "auburn", "yellow", "brown"];
 
 function hash(key: string) {

@@ -25,7 +25,7 @@ const open = (bridge: Bridge, lastId: string, signal: AbortSignal) =>
     signal,
   }).catch(() => undefined);
 
-async function follow(bridge: Bridge, signal: AbortSignal, { onMessage, onConnection }: Handlers) {
+export async function follow(bridge: Bridge, signal: AbortSignal, { onMessage, onConnection }: Handlers) {
   let lastId = "";
   let attempt = 0;
   const track = (message: Message) => {

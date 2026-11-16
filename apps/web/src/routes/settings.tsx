@@ -52,12 +52,12 @@ function Settings() {
         onValueChange={(next) => navigate({ search: { tab: next as typeof tab }, replace: true })}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <TabsList className="px-3">
+        <TabsList>
           <TabsTrigger value="harnesses">Harnesses</TabsTrigger>
           <TabsTrigger value="bridges">Bridges</TabsTrigger>
           <TabsTrigger value="display">Display</TabsTrigger>
         </TabsList>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
           <TabsContent value="harnesses">
             <Harnesses />
           </TabsContent>

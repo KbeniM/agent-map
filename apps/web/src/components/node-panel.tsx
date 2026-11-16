@@ -30,10 +30,10 @@ function resolve(graph: Graph, id: string) {
 
 function ToolRow({ tool, now }: { tool: Tool; now: number }) {
   return (
-    <li className="flex items-start gap-2.5 px-5 py-1.5">
+    <li className="flex items-start gap-2.5 px-4 py-1.5">
       <ToolIcon name={tool.name} className={cn("mt-0.5", !tool.finishedAt && "text-live")} />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="type-caption font-mono">{tool.name}</span>
+        <span className="type-caption font-mono font-medium">{tool.name}</span>
         {tool.summary && <span className="type-caption break-words text-muted-foreground">{tool.summary}</span>}
       </span>
       <span
@@ -51,9 +51,9 @@ function ToolRow({ tool, now }: { tool: Tool; now: number }) {
 
 function MessageRow({ message, from }: { message: Message; from: string }) {
   return (
-    <li className="px-5 py-2">
+    <li className="px-4 py-2">
       <span className="type-micro text-muted-foreground">{from}</span>
-      <p className="type-body wrap-anywhere whitespace-pre-line">{message.text}</p>
+      <p className="type-body mt-0.5 wrap-anywhere whitespace-pre-line">{message.text}</p>
     </li>
   );
 }
@@ -83,7 +83,7 @@ function RemoveSession({ sessionId }: { sessionId: string }) {
     }
   };
   return (
-    <div className="flex items-center gap-2 px-5 pt-2 pb-4">
+    <div className="flex items-center gap-2 border-t border-border/70 px-4 py-3">
       {confirming ? (
         <>
           <span className="type-caption flex-1 text-muted-foreground">
@@ -114,12 +114,12 @@ function titleOf(graph: Graph, agent: Agent, tool?: Tool) {
 function ToolDetail({ tool, agent, now }: { tool: Tool; agent: Agent; now: number }) {
   const outcome = tool.ok === false ? "Failed" : "Finished";
   return (
-    <p className="type-body px-5 pb-4 text-muted-foreground">
+    <p className="type-body px-4 pb-4 text-muted-foreground">
       {tool.finishedAt
         ? `${outcome} in ${duration(tool.startedAt, tool.finishedAt, now)}`
         : `Running for ${duration(tool.startedAt, undefined, now)}`}{" "}
       in{" "}
-      <Link to="/" search={{ node: nodeId.agent(agent.id) }} className="text-foreground">
+      <Link to="/" search={{ node: nodeId.agent(agent.id) }} className="font-medium text-foreground hover:underline">
         {agent.id === agent.sessionId ? "main" : agent.name}
       </Link>
     </p>
@@ -141,17 +141,17 @@ function AgentDetail({ graph, agent, now }: { graph: Graph; agent: Agent; now: n
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
       {children.length > 0 && (
-        <ul className="pb-2">
+        <ul className="flex flex-col gap-0.5 px-2 pb-2">
           {children.map((child) => (
             <li key={child.id}>
               <Link
                 to="/"
                 search={{ node: nodeId.agent(child.id) }}
-                className="type-body mx-2 flex items-center gap-2.5 rounded-md px-3 py-1.5 hover:bg-[var(--button-invisible-bgColor-hover)]"
+                className="type-body flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 transition-colors hover:bg-accent/60"
               >
                 <ProviderIcon provider={providerOf(child.model, session?.harness)} className="size-3.5" />
-                <span className="flex-1">{child.name}</span>
-                <span className="type-micro text-muted-foreground">
+                <span className="flex-1 truncate font-medium">{child.name}</span>
+                <span className="type-micro tabular-nums text-muted-foreground">
                   {child.toolIds.length} {child.toolIds.length === 1 ? "tool" : "tools"}
                 </span>
               </Link>
@@ -159,7 +159,7 @@ function AgentDetail({ graph, agent, now }: { graph: Graph; agent: Agent; now: n
           ))}
         </ul>
       )}
-      <h3 className="type-micro border-t px-5 pt-3 pb-1 text-muted-foreground">Activity</h3>
+      <h3 className="type-micro border-t border-border/70 px-4 pt-3 pb-1 text-muted-foreground">Activity</h3>
       <ul className="pb-3">
         {entries
           .slice(0, 80)
@@ -189,15 +189,17 @@ export function NodePanel({ id }: { id: string }) {
 
   return (
     <Panel side="right" label="Details">
-      <div className="flex items-start gap-2.5 px-5 pt-4 pb-3">
-        {tool ? (
-          <ToolIcon name={tool.name} className="mt-1 size-4" />
-        ) : (
-          <ProviderIcon provider={provider} className="mt-0.5 size-5" />
-        )}
+      <div className="flex items-start gap-2.5 px-4 pt-4 pb-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-secondary/75">
+          {tool ? (
+            <ToolIcon name={tool.name} className="size-4" />
+          ) : (
+            <ProviderIcon provider={provider} className="size-4.5" />
+          )}
+        </span>
         <div className="min-w-0 flex-1">
           <h2 className="type-title break-words text-balance">{titleOf(graph, agent, tool)}</h2>
-          <p className="type-caption break-words text-muted-foreground">
+          <p className="type-caption mt-0.5 break-words text-muted-foreground">
             {tool ? (tool.summary ?? agent.name) : subtitle(graph, agent)}
           </p>
         </div>

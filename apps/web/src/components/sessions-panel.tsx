@@ -20,11 +20,11 @@ import { usePreferences } from "@/stores/preferences";
 function FilterBar({ harnesses }: { harnesses: string[] }) {
   const { filters, setFilters } = usePreferences();
   return (
-    <div className="flex flex-col gap-2 px-4 pt-4 pb-2">
+    <div className="flex flex-col gap-2 px-3.5 pt-3.5 pb-2.5">
       <div className="relative">
         <HugeiconsIcon
           icon={Search01Icon}
-          className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
         />
         <Input
           aria-label="Search sessions"
@@ -48,7 +48,7 @@ function FilterBar({ harnesses }: { harnesses: string[] }) {
             ))}
           </SelectContent>
         </Select>
-        <label className="type-caption flex items-center gap-2 text-muted-foreground">
+        <label className="type-caption flex items-center gap-2 rounded-lg px-1.5 py-1 text-muted-foreground">
           Live
           <Switch
             aria-label="Live only"
@@ -73,7 +73,7 @@ function Empty({ filtered }: { filtered: boolean }) {
         : `Waiting for ${bridges[0]?.url ?? "a bridge"}. Run bun run dev, or add a bridge in Settings.`;
   const setFilters = usePreferences((state) => state.setFilters);
   return (
-    <div className="flex flex-col items-start gap-2 px-5 pb-4">
+    <div className="flex flex-col items-start gap-2.5 px-4 pb-4 pt-1">
       <p className="type-body text-muted-foreground">{message}</p>
       {filtered ? (
         <Button size="sm" onClick={() => setFilters({ query: "", harness: "all", liveOnly: false })}>
@@ -115,14 +115,14 @@ export function SessionsPanel({ selected }: { selected?: string }) {
   return (
     <Panel side="left" label="Sessions">
       {total > 0 && <FilterBar harnesses={harnesses} />}
-      <h2 className="type-caption px-5 pb-2 text-muted-foreground">
+      <h2 className="type-caption border-b border-border/60 px-4 pb-2 pt-1 tabular-nums text-muted-foreground">
         {sessions.length === total ? total : `${sessions.length} of ${total}`} {total === 1 ? "session" : "sessions"}
       </h2>
       {sessions.length === 0 ? (
         <Empty filtered={total > 0} />
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <ul className="px-2 pb-2">
+          <ul className="flex flex-col gap-0.5 p-2">
             {sessions.map((session) => {
               const id = nodeId.agent(session.id);
               const live = now - Date.parse(session.lastAt) < liveMs;
@@ -132,9 +132,8 @@ export function SessionsPanel({ selected }: { selected?: string }) {
                     to="/"
                     search={{ node: id }}
                     className={cn(
-                      "relative flex flex-col gap-0.5 rounded-md px-3 py-2 transition-colors hover:bg-[var(--button-invisible-bgColor-hover)]",
-                      selected === id &&
-                        "bg-secondary before:absolute before:inset-y-1.5 before:-left-2 before:w-1 before:rounded-md before:bg-[var(--borderColor-accent-emphasis)]",
+                      "relative flex flex-col gap-0.5 rounded-xl px-3 py-2 transition-[background-color,box-shadow] duration-150 hover:bg-accent/60",
+                      selected === id && "bg-accent/90 shadow-xs ring-1 ring-border",
                     )}
                   >
                     <span className="flex items-center gap-2">
@@ -142,15 +141,22 @@ export function SessionsPanel({ selected }: { selected?: string }) {
                       <span className="type-body truncate font-medium">{session.title}</span>
                       <span
                         aria-hidden
-                        className="ml-auto size-2 shrink-0 rounded-full"
+                        className="ml-auto size-2 shrink-0 rounded-full ring-2 ring-background/60"
                         style={{ background: sessionColour(session.id) }}
                       />
                     </span>
-                    <span className="type-caption pl-6 text-muted-foreground">
+                    <span className="type-caption pl-6 tabular-nums text-muted-foreground">
                       {session.harness} ·{" "}
                       {session.agents > 0 && `${session.agents} ${session.agents === 1 ? "subagent" : "subagents"} · `}
                       {session.tools} {session.tools === 1 ? "tool" : "tools"} ·{" "}
-                      {live ? <span className="text-live">now</span> : `${ago(session.lastAt, now)} ago`}
+                      {live ? (
+                        <span className="inline-flex items-center gap-1 font-medium text-live">
+                          <span aria-hidden className="size-1.5 rounded-full bg-live" />
+                          now
+                        </span>
+                      ) : (
+                        `${ago(session.lastAt, now)} ago`
+                      )}
                     </span>
                   </Link>
                 </li>

@@ -6,12 +6,14 @@ function Tabs({ className, ...props }: React.ComponentProps<typeof TabsPrimitive
   return <TabsPrimitive.Root data-slot="tabs" className={cn("flex flex-col", className)} {...props} />;
 }
 
-// why: Primer's UnderlineNav: a bottom border with the active item marked by a coral underline
 function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
-      className={cn("flex items-center gap-2 border-b", className)}
+      className={cn(
+        "mx-4 mt-3 mb-1 grid grid-flow-col auto-cols-fr items-center gap-1 rounded-xl border border-border/70 bg-secondary/75 p-1",
+        className,
+      )}
       {...props}
     />
   );
@@ -22,15 +24,11 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "group relative -mb-px flex h-12 items-center text-sm text-foreground transition-colors after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:transition-colors data-active:font-semibold data-active:after:bg-underline-active",
+        "flex h-8 pointer-coarse:h-10 items-center justify-center rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-[background-color,color,box-shadow] duration-150 hover:text-foreground data-active:bg-background/95 data-active:text-foreground data-active:shadow-xs",
         className,
       )}
       {...props}
-    >
-      <span className="rounded-md px-2 py-1 transition-colors group-hover:bg-[var(--button-invisible-bgColor-hover)]">
-        {props.children}
-      </span>
-    </TabsPrimitive.Trigger>
+    />
   );
 }
 
