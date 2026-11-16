@@ -6,7 +6,7 @@ Works with Claude Code, Codex, Cursor, GitHub Copilot CLI, Gemini CLI, Grok Buil
 
 ## Run it
 
-**Desktop app.** Download the build for your OS from the latest release, or build it yourself with Rust and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/):
+**Desktop app (Linux, macOS, Windows).** Take the build for your OS from the latest run of the Desktop workflow, or build it yourself with Rust and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/):
 
 ```sh
 bun install && bun run desktop:build   # bundles land in apps/desktop/src-tauri/target/release/bundle

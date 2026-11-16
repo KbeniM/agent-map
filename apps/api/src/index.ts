@@ -45,12 +45,15 @@ if (env.STATIC_DIR) {
   });
 }
 
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.on(signal, () => {
-    stop();
-    store.close();
-    process.exit(0);
-  });
+const shutdown = () => {
+  stop();
+  store.close();
+  process.exit(0);
+};
+for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, shutdown);
+// why: the desktop app's stdin pipe closes however the app ends (crash or kill included), so the sidecar never outlives it
+if (process.env.AGENT_MAP_EXIT_WITH_STDIN === "1") {
+  process.stdin.on("end", shutdown).on("close", shutdown).resume();
 }
 
 console.log(`agent-map bridge on http://${env.HOST}:${env.BRIDGE_PORT}`);

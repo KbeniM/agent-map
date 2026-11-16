@@ -21,6 +21,7 @@ pub fn run() {
                 .env("BRIDGE_PORT", "4000")
                 .env("WEB_ORIGIN", ORIGINS)
                 .env("NODE_ENV", "production")
+                .env("AGENT_MAP_EXIT_WITH_STDIN", "1")
                 .spawn()?;
             *app.state::<Bridge>().0.lock().unwrap() = Some(child);
             Ok(())
