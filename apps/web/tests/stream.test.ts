@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import type { AgentEvent } from "@agent-map/shared/events";
+import { createMessageDispatcher, follow } from "../src/lib/bridge-stream";
 import type { Message } from "../src/lib/sse";
-import { follow } from "../src/lib/stream";
 import type { Connection } from "../src/stores/graph";
 import type { Bridge } from "../src/stores/preferences";
 
 const bridge: Bridge = { id: "b1", name: "Local", url: "http://127.0.0.1:4100", token: "secret", enabled: true };
+const at = "2026-11-16T10:00:00.000Z";
 
 const sseBody = (...chunks: string[]) =>
   new ReadableStream<Uint8Array>({
@@ -75,5 +77,46 @@ describe("follow", () => {
     expect(headers[0].authorization).toBe("Bearer secret");
     expect(headers[0]["last-event-id"]).toBeUndefined();
     expect(headers[1]["last-event-id"]).toBe("db:1");
+  });
+});
+
+describe("createMessageDispatcher", () => {
+  test("drops buffered events for a forgotten session and ignores malformed JSON", () => {
+    const originalRaf = globalThis.requestAnimationFrame;
+    const originalCancel = globalThis.cancelAnimationFrame;
+    let flush: FrameRequestCallback | undefined;
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      flush = cb;
+      return 1;
+    }) as typeof requestAnimationFrame;
+    globalThis.cancelAnimationFrame = (() => {}) as typeof cancelAnimationFrame;
+
+    const received: AgentEvent[] = [];
+    const forgotten: string[] = [];
+    const dispatcher = createMessageDispatcher("b1", {
+      receive: (_id, events) => received.push(...events),
+      reset: () => {},
+      forget: (_id, sessionId) => forgotten.push(sessionId),
+    });
+
+    try {
+      dispatcher.dispatch({
+        event: "message",
+        data: JSON.stringify({ type: "session.started", sessionId: "s1", harness: "codex", at }),
+      });
+      dispatcher.dispatch({
+        event: "message",
+        data: JSON.stringify({ type: "session.started", sessionId: "s2", harness: "codex", at }),
+      });
+      dispatcher.dispatch({ event: "message", data: "{not-json" });
+      dispatcher.dispatch({ event: "forget", data: "s1" });
+      flush?.(0);
+    } finally {
+      globalThis.requestAnimationFrame = originalRaf;
+      globalThis.cancelAnimationFrame = originalCancel;
+    }
+
+    expect(forgotten).toEqual(["s1"]);
+    expect(received.map((event) => event.sessionId)).toEqual(["s2"]);
   });
 });

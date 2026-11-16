@@ -1,5 +1,3 @@
-import type { MapLink, MapNode } from "@agent-map/shared/layout";
-import { toMap } from "@agent-map/shared/layout";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph3D, { type ForceGraphMethods } from "react-force-graph-3d";
 import type { Object3D } from "three";
@@ -10,6 +8,7 @@ import { type Link, type Node, reducedMotion, useFirstFit, useFocus, useForces, 
 import { token } from "./colour";
 import { settle } from "./motion";
 import { dispose, linkObject, nodeObject, objectKey, RADIUS } from "./objects";
+import { linkStyle, projectMap } from "./projection";
 
 type Props = { selected?: string; onSelect: (id?: string) => void };
 
@@ -45,43 +44,13 @@ function cached(
   return object;
 }
 
-type Colours = Record<"link" | "particle" | "message" | "focus", string>;
-
-// why: subagent links carry messages and read as blue; tool links stay quiet until hovered or live
-function linkStyle(colours: Colours, touches: (link: Link) => boolean, particles: boolean) {
-  const spawn = (link: Link) => link.type === "spawn";
-  const flowing = particles && !reducedMotion();
-  return {
-    linkColor: (link: Link) => (touches(link) ? colours.focus : spawn(link) ? colours.message : colours.link),
-    linkWidth: (link: Link) => (touches(link) ? 0.6 : spawn(link) ? 0.5 : 0.25),
-    linkDirectionalArrowLength: (link: Link) => (spawn(link) ? 3.5 : 2),
-    linkDirectionalArrowColor: (link: Link) => (spawn(link) ? colours.message : colours.link),
-    linkDirectionalParticles: (link: Link) => (flowing && link.live ? 3 : 0),
-    linkDirectionalParticleWidth: (link: Link) => (spawn(link) ? 2 : 1.4),
-    linkDirectionalParticleColor: (link: Link) => (spawn(link) ? colours.message : colours.particle),
-  };
-}
-
 function useMapData(nodes: Map<string, Node>) {
   const { graph, now, liveMs } = useVisibleGraph();
   const toolsPerAgent = usePreferences((state) => state.display.toolsPerAgent);
-  return useMemo(() => {
-    const map = toMap(graph, now, { toolsPerAgent, liveMs });
-    const parents = new Map(map.links.map((link) => [link.target, link.source]));
-    const ids = new Set(map.nodes.map((node) => node.id));
-    for (const id of nodes.keys()) if (!ids.has(id)) nodes.delete(id);
-    for (const node of map.nodes) {
-      const previous = nodes.get(node.id);
-      const parent = nodes.get(parents.get(node.id) ?? "");
-      // why: a new node starts at its parent so it grows out of the agent that spawned it
-      const spawn = parent && !previous ? { x: parent.x, y: parent.y, z: parent.z } : {};
-      nodes.set(node.id, previous ? Object.assign(previous, node) : { ...node, ...spawn });
-    }
-    return {
-      nodes: map.nodes.map((node) => nodes.get(node.id) as Node),
-      links: map.links.map((link) => ({ ...link })),
-    };
-  }, [graph, now, nodes, toolsPerAgent, liveMs]);
+  return useMemo(
+    () => projectMap(nodes, graph, now, { toolsPerAgent, liveMs }),
+    [graph, now, nodes, toolsPerAgent, liveMs],
+  );
 }
 
 const HUE: Record<ColourBy, (node: Node) => string> = {
@@ -160,7 +129,7 @@ export function AgentGraph({ selected, onSelect }: Props) {
   const hover = (id?: string) => setHovered(id);
 
   return (
-    <ForceGraph3D<MapNode, MapLink>
+    <ForceGraph3D<Node, Link>
       ref={ref}
       width={size.width}
       height={size.height}
@@ -178,7 +147,7 @@ export function AgentGraph({ selected, onSelect }: Props) {
         object.position.set((start.x + end.x) / 2, (start.y + end.y) / 2, (start.z + end.z) / 2);
         return false;
       }}
-      {...linkStyle(colours, touches, display.particles)}
+      {...linkStyle(colours, touches, display.particles && !reducedMotion())}
       linkOpacity={0.55}
       linkDirectionalArrowRelPos={1}
       linkDirectionalParticleSpeed={0.01}

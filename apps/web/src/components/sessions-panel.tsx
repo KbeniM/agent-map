@@ -132,8 +132,8 @@ export function SessionsPanel({ selected }: { selected?: string }) {
                     to="/"
                     search={{ node: id }}
                     className={cn(
-                      "relative flex flex-col gap-0.5 rounded-xl px-3 py-2 transition-[background-color,box-shadow] duration-150 hover:bg-accent/60",
-                      selected === id && "bg-accent/90 shadow-xs ring-1 ring-border",
+                      "relative flex flex-col gap-0.5 rounded-xl px-3 py-2 transition-[background-color,box-shadow] duration-100 hover:bg-accent/60",
+                      selected === id && "bg-primary/10 shadow-xs ring-1 ring-primary/30 hover:bg-primary/12",
                     )}
                   >
                     <span className="flex items-center gap-2">

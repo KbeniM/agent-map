@@ -53,9 +53,9 @@ export function createApp({ store, runtime, token, origins, version }: Options) 
           throw new HTTPException(400, { message: "Expected an object" });
         // why: some harnesses (Copilot CLI) only name the event in the hook config, so it travels as ?event=
         const event = c.req.valid("query").event;
-        const events = runtime.hook(c.req.valid("param").adapter, event ? { ...payload, hookEvent: event } : payload);
-        if (!events) return c.json({ error: "Unknown or disabled adapter" }, 404);
-        return c.json({ accepted: store.publish(events) }, 202);
+        const accepted = runtime.hook(c.req.valid("param").adapter, event ? { ...payload, hookEvent: event } : payload);
+        if (accepted === undefined) return c.json({ error: "Unknown or disabled adapter" }, 404);
+        return c.json({ accepted }, 202);
       },
     )
     .delete("/v1/sessions/:id", zValidator("param", idParam), (c) =>

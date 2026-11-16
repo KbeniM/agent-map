@@ -25,7 +25,7 @@ export function MapControls() {
         <span
           aria-hidden
           className={cn(
-            "absolute inset-y-0.5 left-0.5 w-10 rounded-md bg-background/95 shadow-xs ring-1 ring-border/60 transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]",
+            "absolute inset-y-0.5 left-0.5 w-10 rounded-md bg-elevated shadow-xs ring-1 ring-border/60 transition-transform duration-200 ease-[var(--ease-drawer)]",
             view === "3d" && "translate-x-10",
           )}
         />

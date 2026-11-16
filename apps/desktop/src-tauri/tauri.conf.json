@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Agent Map",
+  "productName": "Rancher",
   "version": "0.1.0",
   "identifier": "dev.agentmap.desktop",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Agent Map",
+        "title": "Rancher",
         "width": 1440,
         "height": 900,
         "minWidth": 720,

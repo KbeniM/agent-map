@@ -1,5 +1,4 @@
 import type { Agent, Graph, Message, Tool } from "@agent-map/shared/graph";
-import { parentOf } from "@agent-map/shared/graph";
 import { nodeId } from "@agent-map/shared/layout";
 import { providerOf } from "@agent-map/shared/providers";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
@@ -11,22 +10,10 @@ import { ProviderIcon, ToolIcon } from "@/components/icons";
 import { Panel } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { client, unwrap } from "@/lib/api";
-import { PROVIDER_NAMES } from "@/lib/icons";
+import { agentDetails, nodeSubtitle, nodeTitle, resolveNode } from "@/lib/inspector";
 import { duration, useNow } from "@/lib/time";
 import { useGraph, useSessionBridge } from "@/stores/graph";
 import { usePreferences } from "@/stores/preferences";
-
-type Entry = { at: string; tool?: Tool; message?: Message };
-
-function resolve(graph: Graph, id: string) {
-  const [type, key] = [id.slice(0, id.indexOf(":")), id.slice(id.indexOf(":") + 1)];
-  if (type === "tool") {
-    const tool = graph.tools[key];
-    return tool && { tool, agent: graph.agents[tool.agentId] };
-  }
-  const agent = graph.agents[key];
-  return agent && { agent };
-}
 
 function ToolRow({ tool, now }: { tool: Tool; now: number }) {
   return (
@@ -51,19 +38,11 @@ function ToolRow({ tool, now }: { tool: Tool; now: number }) {
 
 function MessageRow({ message, from }: { message: Message; from: string }) {
   return (
-    <li className="px-4 py-2">
+    <li className="mx-3 my-1.5 rounded-xl border border-border/50 bg-secondary/45 px-3 py-2">
       <span className="type-micro text-muted-foreground">{from}</span>
       <p className="type-body mt-0.5 wrap-anywhere whitespace-pre-line">{message.text}</p>
     </li>
   );
-}
-
-function subtitle(graph: Graph, agent: Agent) {
-  const session = graph.sessions[agent.sessionId];
-  if (agent.id === agent.sessionId) return [session?.harness, agent.model, session?.cwd].filter(Boolean).join(" · ");
-  const parent = graph.agents[parentOf(graph, agent) ?? ""];
-  const of = parent?.id === parent?.sessionId ? (session?.title ?? "main") : parent?.name;
-  return [`Subagent of ${of}`, agent.model].filter(Boolean).join(" · ");
 }
 
 function RemoveSession({ sessionId }: { sessionId: string }) {
@@ -106,11 +85,6 @@ function RemoveSession({ sessionId }: { sessionId: string }) {
   );
 }
 
-function titleOf(graph: Graph, agent: Agent, tool?: Tool) {
-  if (tool) return tool.name;
-  return agent.id === agent.sessionId ? graph.sessions[agent.sessionId]?.title : agent.name;
-}
-
 function ToolDetail({ tool, agent, now }: { tool: Tool; agent: Agent; now: number }) {
   const outcome = tool.ok === false ? "Failed" : "Finished";
   return (
@@ -127,16 +101,7 @@ function ToolDetail({ tool, agent, now }: { tool: Tool; agent: Agent; now: numbe
 }
 
 function AgentDetail({ graph, agent, now }: { graph: Graph; agent: Agent; now: number }) {
-  const isMain = agent.id === agent.sessionId;
-  const entries: Entry[] = [
-    ...agent.toolIds.map((toolId) => ({ at: graph.tools[toolId].startedAt, tool: graph.tools[toolId] })),
-    ...agent.messages.map((message) => ({ at: message.at, message })),
-  ].sort((a, b) => b.at.localeCompare(a.at));
-  const children = Object.values(graph.agents).filter(
-    (other) => other.id !== agent.id && parentOf(graph, other) === agent.id,
-  );
-  const session = graph.sessions[agent.sessionId];
-  const speaker = isMain ? PROVIDER_NAMES[providerOf(agent.model, session?.harness)] : agent.name;
+  const { isMain, entries, children, speaker, session } = agentDetails(graph, agent);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -182,7 +147,7 @@ function AgentDetail({ graph, agent, now }: { graph: Graph; agent: Agent; now: n
 export function NodePanel({ id }: { id: string }) {
   const graph = useGraph();
   const now = useNow(1000);
-  const found = resolve(graph, id);
+  const found = resolveNode(graph, id);
   if (!found?.agent) return null;
   const { agent, tool } = found;
   const provider = providerOf(agent.model, graph.sessions[agent.sessionId]?.harness);
@@ -198,9 +163,9 @@ export function NodePanel({ id }: { id: string }) {
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="type-title break-words text-balance">{titleOf(graph, agent, tool)}</h2>
+          <h2 className="type-title break-words text-balance">{nodeTitle(graph, agent, tool)}</h2>
           <p className="type-caption mt-0.5 break-words text-muted-foreground">
-            {tool ? (tool.summary ?? agent.name) : subtitle(graph, agent)}
+            {tool ? (tool.summary ?? agent.name) : nodeSubtitle(graph, agent)}
           </p>
         </div>
         <Button asChild variant="ghost" size="icon-sm" aria-label="Close">

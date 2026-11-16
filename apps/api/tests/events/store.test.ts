@@ -1,3 +1,4 @@
+import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -59,5 +60,22 @@ describe("createStore", () => {
     const store = createStore(":memory:");
     store.publish(Array.from({ length: 4500 }, (_, i) => tool(`t${i}`)));
     expect([...store.since(10)]).toHaveLength(4490);
+  });
+
+  test("migrates a pre-drizzle database without losing its id or events", async () => {
+    const path = join(await mkdtemp(join(tmpdir(), "agent-map-legacy-")), "events.db");
+    const legacy = new Database(path, { create: true });
+    legacy.run(
+      "CREATE TABLE events (seq INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL UNIQUE, session_id TEXT NOT NULL, at TEXT NOT NULL, body TEXT NOT NULL)",
+    );
+    legacy.run("CREATE TABLE hidden (session_id TEXT PRIMARY KEY)");
+    legacy.run("CREATE TABLE meta (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    legacy.run("INSERT INTO meta (name, value) VALUES ('id', 'legacy12')");
+    legacy.close();
+
+    const store = createStore(path);
+    expect(store.id).toBe("legacy12");
+    expect(store.publish([tool("t1")])).toBe(1);
+    store.close();
   });
 });

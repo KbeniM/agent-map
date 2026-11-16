@@ -1,7 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { type AdapterInfo, type BridgeSettings, bridgeSettingsSchema } from "@agent-map/shared/config";
-import type { AgentEvent } from "@agent-map/shared/events";
 import { pathFromEnv } from "./env";
 import type { Store } from "./events/store";
 import type { Adapter } from "./harness/adapter";
@@ -66,14 +65,17 @@ export function createRuntime({ adapters, store, dataDir, defaults }: Options) {
       restart();
       return settings;
     },
-    hook(id: string, payload: unknown): AgentEvent[] | undefined {
+    hook(id: string, payload: unknown): number | undefined {
       const adapter = adapters.find((candidate) => candidate.id === id && candidate.hook);
       if (!adapter?.hook || settings.adapters[id]?.enabled === false) return undefined;
       const events = adapter.hook(payload);
-      const stats = hookStats(id);
-      for (const event of events) stats.sessions.add(event.sessionId);
-      stats.lastEventAt = events.at(-1)?.at ?? stats.lastEventAt;
-      return events;
+      const accepted = store.publish(events);
+      if (accepted > 0) {
+        const stats = hookStats(id);
+        for (const event of events) stats.sessions.add(event.sessionId);
+        stats.lastEventAt = events.at(-1)?.at ?? stats.lastEventAt;
+      }
+      return accepted;
     },
     info(): AdapterInfo[] {
       return adapters.map((adapter) => {
