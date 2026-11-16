@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { AgentEvent } from "../src/events";
-import { applyAll, emptyGraph, forgetSession, mergeGraphs, parentOf } from "../src/graph";
+import { apply, applyAll, emptyGraph, forgetSession, mergeGraphs, parentOf } from "../src/graph";
 
 const at = (second: number) => `2026-11-16T10:00:${String(second).padStart(2, "0")}.000Z`;
 
@@ -19,7 +19,7 @@ describe("apply", () => {
     expect(graph.sessions.s1).toMatchObject({ harness: "claude-code", title: "Fix login", lastAt: at(5) });
     expect(graph.agents.s1.toolIds).toEqual(["t1"]);
     expect(graph.agents.a1.toolIds).toEqual(["t2"]);
-    expect(graph.tools.t2).toMatchObject({ ok: false, finishedAt: at(4) });
+    expect(graph.tools.s1.t2).toMatchObject({ ok: false, finishedAt: at(4) });
   });
 
   test("links a subagent to the agent whose tool call spawned it, in any order", () => {
@@ -88,7 +88,8 @@ describe("apply", () => {
     const graph = forgetSession(applyAll(emptyGraph(), [...run, other]), "s1");
     expect(Object.keys(graph.sessions)).toEqual(["s2"]);
     expect(Object.keys(graph.agents)).toEqual(["s2"]);
-    expect(Object.keys(graph.tools)).toEqual(["x"]);
+    expect(Object.keys(graph.tools)).toEqual(["s2"]);
+    expect(Object.keys(graph.tools.s2)).toEqual(["x"]);
   });
 
   test("merges graphs from several bridges", () => {
@@ -120,5 +121,38 @@ describe("apply", () => {
     const snapshot = structuredClone(before);
     applyAll(before, run.slice(2));
     expect(before).toEqual(snapshot);
+  });
+
+  test("shares the tools of sessions an event does not touch", () => {
+    const other: AgentEvent = {
+      type: "tool.started",
+      sessionId: "s2",
+      agentId: "s2",
+      toolId: "x",
+      name: "Read",
+      at: at(1),
+    };
+    const before = applyAll(emptyGraph(), [...run, other]);
+    const after = apply(before, { type: "tool.finished", sessionId: "s2", toolId: "x", ok: true, at: at(6) });
+    expect(after.tools.s1).toBe(before.tools.s1);
+    expect(after.tools.s2).not.toBe(before.tools.s2);
+    expect(before.tools.s2.x.finishedAt).toBeUndefined();
+  });
+
+  test("stops a subagent spawned earlier in the same batch", () => {
+    const graph = applyAll(emptyGraph(), [run[1], run[5], run[2]]);
+    expect(graph.agents.a1.stoppedAt).toBeUndefined();
+    expect(applyAll(graph, [{ ...run[5], at: at(7) } as AgentEvent]).agents.a1.stoppedAt).toBe(at(7));
+  });
+
+  test("batched applyAll matches sequential apply", () => {
+    const base = applyAll(emptyGraph(), run.slice(0, 2));
+    const more: AgentEvent[] = [
+      ...run.slice(2),
+      { type: "message", sessionId: "s1", agentId: "a1", role: "assistant", text: "done", at: at(6) },
+    ];
+    const batched = applyAll(base, more);
+    const sequential = more.reduce(apply, base);
+    expect(batched).toEqual(sequential);
   });
 });

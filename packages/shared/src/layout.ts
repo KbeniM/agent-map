@@ -1,5 +1,5 @@
 import type { Agent, Graph, Tool } from "./graph";
-import { parentOf } from "./graph";
+import { parentOf, toolOf } from "./graph";
 import { type Provider, providerOf } from "./providers";
 
 export type NodeType = "session" | "agent" | "tool";
@@ -14,24 +14,32 @@ export type MapNode = {
   harness: string;
 };
 export type LinkType = "spawn" | "tool";
-export type MapLink = { id: string; type: LinkType; source: string; target: string; live: boolean; label?: string };
+export type MapLink = {
+  id: string;
+  type: LinkType;
+  source: string;
+  target: string;
+  live: boolean;
+  label?: string;
+  labelAt?: string;
+};
 
 export const nodeId = { agent: (id: string) => `agent:${id}`, tool: (id: string) => `tool:${id}` };
 
 export type MapOptions = { toolsPerAgent: number; liveMs: number };
 const DEFAULTS: MapOptions = { toolsPerAgent: 8, liveMs: 30_000 };
 
-// why: a running subagent's link shows the task it was given, a finished one shows its answer
+// why: spawn link labels flash the latest message exchanged with the subagent
 function spawnLabel(agent: Agent) {
-  const prompt = agent.messages.find((message) => message.role === "user");
-  const answer = agent.messages.findLast((message) => message.role === "assistant");
-  return (agent.stoppedAt ? answer : prompt)?.text ?? prompt?.text;
+  const message = agent.messages.at(-1);
+  return message ? { label: message.text, labelAt: message.at } : {};
 }
 
 function agentNode(graph: Graph, agent: Agent, now: number, liveMs: number): MapNode {
   const isMain = agent.id === agent.sessionId;
   const session = graph.sessions[agent.sessionId];
-  const running = agent.toolIds.some((toolId) => !graph.tools[toolId].finishedAt);
+  const tools = graph.tools[agent.sessionId] ?? {};
+  const running = agent.toolIds.some((toolId) => !tools[toolId]?.finishedAt);
   return {
     id: nodeId.agent(agent.id),
     type: isMain ? "session" : "agent",
@@ -82,11 +90,15 @@ export function toMap(
         source: nodeId.agent(parent),
         target: node.id,
         live,
-        label: spawnLabel(agent),
+        ...spawnLabel(agent),
       });
     }
-    const tools = agent.toolIds.map((toolId) => graph.tools[toolId]).filter((tool) => !spawning.has(tool.id));
-    for (const tool of toolsPerAgent > 0 ? tools.slice(-toolsPerAgent) : []) {
+    const latest: Tool[] = [];
+    for (let i = agent.toolIds.length - 1; i >= 0 && latest.length < toolsPerAgent; i--) {
+      const tool = toolOf(graph, agent.sessionId, agent.toolIds[i]);
+      if (tool && !spawning.has(tool.id)) latest.unshift(tool);
+    }
+    for (const tool of latest) {
       const [toolNode, link] = toolEntries(tool, agent, node.harness);
       nodes.push(toolNode);
       links.push(link);

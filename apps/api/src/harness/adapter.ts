@@ -1,4 +1,4 @@
-import type { AgentEvent } from "@agent-map/shared/events";
+import type { AgentEvent } from "@rancher/shared/events";
 
 export class InvalidPayload extends Error {}
 
@@ -12,8 +12,14 @@ export type FileSource<State> = {
   // why: append files are read from the last offset; snapshot files are rewritten in place and re-read whole
   mode: "append" | "snapshot";
   // why: method syntax keeps each adapter's own state type assignable to the shared registry type
-  open(relative: string, absolute: string, mtime: Date): Promise<Opened<State> | undefined> | Opened<State> | undefined;
-  parse(text: string, state: State): AgentEvent[];
+  open(
+    relative: string,
+    absolute: string,
+    mtime: Date,
+    sinceHours: number,
+  ): Promise<Opened<State> | undefined> | Opened<State> | undefined;
+  parse?(text: string, state: State): AgentEvent[];
+  read?(absolute: string, state: State): Promise<AgentEvent[]> | AgentEvent[];
 };
 
 export type Adapter = {

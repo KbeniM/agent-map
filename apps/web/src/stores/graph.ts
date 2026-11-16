@@ -1,6 +1,5 @@
-import type { AgentEvent } from "@agent-map/shared/events";
-import { applyAll, emptyGraph, forgetSession, type Graph, mergeGraphs } from "@agent-map/shared/graph";
-import { useMemo } from "react";
+import type { AgentEvent } from "@rancher/shared/events";
+import { applyAll, emptyGraph, forgetSession, type Graph, mergeGraphs } from "@rancher/shared/graph";
 import { create } from "zustand";
 
 export type Connection = "connecting" | "open" | "unauthorized" | "closed";
@@ -37,9 +36,13 @@ export const useGraphs = create<GraphStore>()((set) => ({
     set((state) => ({ connections: { ...state.connections, [bridgeId]: connection } })),
 }));
 
+let merged: { graphs?: Record<string, Graph>; graph: Graph } = { graph: emptyGraph() };
+
+// why: every panel and the map read the merged graph, so it is merged once per store change instead of once per reader
 export function useGraph() {
   const graphs = useGraphs((state) => state.graphs);
-  return useMemo(() => mergeGraphs(Object.values(graphs)), [graphs]);
+  if (merged.graphs !== graphs) merged = { graphs, graph: mergeGraphs(Object.values(graphs)) };
+  return merged.graph;
 }
 
 export function useSessionBridge() {

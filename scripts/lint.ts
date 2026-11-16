@@ -26,7 +26,7 @@ const RULES: Rule[] = [
   {
     name: "comment: only one-line `// why: …` or `// shortcut: <limit>, <upgrade>`",
     files: CODE,
-    allow: GENERATED,
+    allow: [...GENERATED, ...SHADCN],
     check: (line, previous) => badLineComment(line, previous) || trailingComment(line),
   },
   {
@@ -39,6 +39,7 @@ const RULES: Rule[] = [
   {
     name: "design: no hard-coded hex colour in a component; use a token",
     files: UI,
+    allow: SHADCN,
     check: (line) => /#[0-9a-fA-F]{3,8}\b/.test(line),
   },
   {
@@ -50,6 +51,7 @@ const RULES: Rule[] = [
   {
     name: "design: no status badge or pill; state is plain text",
     files: UI,
+    allow: SHADCN,
     check: (line) => /\bBadge\b|components\/ui\/badge/.test(line),
   },
   {

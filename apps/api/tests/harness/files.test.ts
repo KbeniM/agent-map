@@ -2,14 +2,14 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentEvent } from "@agent-map/shared/events";
+import type { AgentEvent } from "@rancher/shared/events";
 import { claudeCode } from "../../src/harness/claude-code";
 import { watchFiles } from "../../src/harness/files";
 import { at, until } from "../helpers";
 
 const jsonl = (...lines: object[]) =>
   `${lines.map((value) => JSON.stringify({ timestamp: at, ...value })).join("\n")}\n`;
-const dir = await mkdtemp(join(tmpdir(), "agent-map-files-"));
+const dir = await mkdtemp(join(tmpdir(), "rancher-files-"));
 afterAll(() => rm(dir, { recursive: true, force: true }));
 const source = claudeCode.files as NonNullable<typeof claudeCode.files>;
 

@@ -1,4 +1,4 @@
-import { type AgentEvent, agentEventSchema } from "@agent-map/shared/events";
+import { type AgentEvent, agentEventSchema } from "@rancher/shared/events";
 import { type Connection, useGraphs } from "@/stores/graph";
 import type { Bridge } from "@/stores/preferences";
 import { authHeaders } from "./api";

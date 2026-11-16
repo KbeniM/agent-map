@@ -11,8 +11,9 @@
 
 - **Live map state** is in Zustand (`stores/graph.ts`): one graph per bridge, merged by `useGraph()`, filtered by `useVisibleGraph()`. `lib/stream.tsx` follows each enabled bridge with `fetch` (for the bearer header), parses SSE in `lib/sse.ts`, reconnects with backoff, and batches events per animation frame.
 - Zustand selectors return stored values, never new arrays or objects; derive after selecting, or React loops.
+- **The 3D map renders on demand** (`components/graph/demand.ts`): it sleeps once the layout, animations, camera and pointer are quiet. A change to a Three.js object outside a React render, an engine tick or a pointer event calls `demandFrames()`, or it stays invisible until the next wake.
 - **Request/response data** from the bridge (`/v1/harnesses`) goes through `@tanstack/react-query`.
-- **Preferences** (bridges with tokens, theme, view, display, filters) persist through Zustand `persist` under `agent-map-preferences` with a version and `migrate`; `index.html` reads the same key for the theme before first paint.
+- **Preferences** (bridges with tokens, theme, view, display, filters) persist through Zustand `persist` under `rancher-preferences` with a version and `migrate`; `index.html` reads the same key for the theme before first paint.
 
 ## 3. Bridge calls
 

@@ -1,4 +1,4 @@
-import type { AgentEvent } from "@agent-map/shared/events";
+import type { AgentEvent } from "@rancher/shared/events";
 import { z } from "zod";
 import type { Adapter } from "./adapter";
 import { clip, fifoPairing, isoOf, parseOrThrow, text } from "./pairing";

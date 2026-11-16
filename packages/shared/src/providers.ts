@@ -25,8 +25,11 @@ const BY_MODEL: [RegExp, Provider][] = [
 
 const BY_HARNESS: Record<string, Provider> = {
   "claude-code": "anthropic",
+  claudeAgent: "anthropic",
   codex: "openai",
   "gemini-cli": "google",
+  antigravity: "google",
+  grok: "xai",
   cursor: "cursor",
 };
 

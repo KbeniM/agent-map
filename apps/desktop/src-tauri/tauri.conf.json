@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Rancher",
   "version": "0.1.0",
-  "identifier": "dev.agentmap.desktop",
+  "identifier": "dev.rancher.desktop",
   "build": {
     "beforeDevCommand": "bun run --cwd ../web dev",
     "beforeBuildCommand": "bun run --cwd ../web build",
@@ -29,6 +29,6 @@
     "category": "DeveloperTool",
     "shortDescription": "A live 3D map of your coding-agent sessions",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
-    "externalBin": ["binaries/agent-map-bridge"]
+    "externalBin": ["binaries/rancher-bridge"]
   }
 }

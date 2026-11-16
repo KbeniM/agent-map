@@ -1,5 +1,5 @@
-import type { Provider } from "@agent-map/shared/providers";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { Provider } from "@rancher/shared/providers";
 import { cn } from "cn";
 import { AGENT_ICON, isMonoLogo, providerSvg, toolIcon } from "@/lib/icons";
 

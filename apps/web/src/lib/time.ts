@@ -1,12 +1,39 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
+type Clock = { now: number; read: () => number; subscribe: (listener: () => void) => () => void };
+const clocks = new Map<number, Clock>();
+
+function clockOf(everyMs: number) {
+  const existing = clocks.get(everyMs);
+  if (existing) return existing;
+  const listeners = new Set<() => void>();
+  let timer: ReturnType<typeof setInterval> | undefined;
+  const clock: Clock = {
+    now: Date.now(),
+    read: () => clock.now,
+    subscribe: (listener) => {
+      if (listeners.size === 0) {
+        clock.now = Date.now();
+        timer = setInterval(() => {
+          clock.now = Date.now();
+          for (const notify of listeners) notify();
+        }, everyMs);
+      }
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) clearInterval(timer);
+      };
+    },
+  };
+  clocks.set(everyMs, clock);
+  return clock;
+}
+
+// why: one timer per interval, so every reader of the same rate gets the same now and renders in the same commit
 export function useNow(everyMs: number) {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), everyMs);
-    return () => clearInterval(timer);
-  }, [everyMs]);
-  return now;
+  const clock = clockOf(everyMs);
+  return useSyncExternalStore(clock.subscribe, clock.read);
 }
 
 export function ago(iso: string, now: number) {

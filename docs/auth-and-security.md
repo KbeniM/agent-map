@@ -1,9 +1,9 @@
 # Auth and Security
 
-Agent Map has no user accounts. A bridge is either local or hosted (ADR-0004).
+Rancher has no user accounts. A bridge is either local or hosted (ADR-0004).
 
-1. **Local by default.** The bridge listens on `127.0.0.1`. With `HOST` set to anything else it refuses to start unless `AGENT_MAP_TOKEN` is set.
-2. **Bearer token.** With a token, every `/v1` route except `/v1/health` needs `Authorization: Bearer <token>` (`apps/api/tests/http/routes.test.ts` keeps a table of every route). Hooks send it from an environment variable (`AGENT_MAP_TOKEN`), never inline in a committed file.
+1. **Local by default.** The bridge listens on `127.0.0.1`. With `HOST` set to anything else it refuses to start unless `RANCHER_TOKEN` is set.
+2. **Bearer token.** With a token, every `/v1` route except `/v1/health` needs `Authorization: Bearer <token>` (`apps/api/tests/http/routes.test.ts` keeps a table of every route). Hooks send it from an environment variable (`RANCHER_TOKEN`), never inline in a committed file.
 3. **Browser storage.** The web app keeps bridge URLs and tokens in `localStorage` for the bridges it follows. Treat a shared browser profile as able to read them.
 4. **CORS.** Only the origins in `WEB_ORIGIN` (comma-separated) may call the bridge from a browser. A bridge serving the app itself (`STATIC_DIR`) is same-origin.
 5. **Minimal tool data.** A tool call carries its name and one summary field (`summarize` in `apps/api/src/harness/claude-code.ts`), first line, at most 120 characters. Full inputs and outputs never leave the adapter.

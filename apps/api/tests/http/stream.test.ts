@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { AgentEvent } from "@agent-map/shared/events";
+import type { AgentEvent } from "@rancher/shared/events";
 import { at, bridge } from "../helpers";
 
 const event = (toolId: string): AgentEvent => ({

@@ -12,6 +12,9 @@ describe("providerOf", () => {
   test("falls back to the harness when the model is unknown or missing", () => {
     expect(providerOf(undefined, "codex")).toBe("openai");
     expect(providerOf("my-finetune", "claude-code")).toBe("anthropic");
+    expect(providerOf(undefined, "antigravity")).toBe("google");
+    expect(providerOf(undefined, "grok")).toBe("xai");
+    expect(providerOf(undefined, "claudeAgent")).toBe("anthropic");
   });
 
   test("is unknown when neither says", () => {

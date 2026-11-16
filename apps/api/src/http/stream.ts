@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { streamSSE } from "hono/streaming";
-import type { Notice, Store } from "../events/store";
+import type { Entry, Notice, Store } from "../events/store";
 
 const lastSeq = (store: Store, header: string | undefined) => {
   const [id, seq] = (header ?? "").split(":");
@@ -10,9 +10,13 @@ const lastSeq = (store: Store, header: string | undefined) => {
 export const stream = (store: Store) => (c: Context) =>
   streamSSE(c, async (sse) => {
     const after = lastSeq(store, c.req.header("Last-Event-ID"));
+    // why: bodies come from JSON.stringify and hold no raw newline, so one data line per event is valid SSE
+    const frames = (entries: Entry[]) =>
+      entries.map((entry) => `id: ${store.id}:${entry.seq}\ndata: ${entry.body}\n\n`).join("");
+    // why: one write per batch or history page instead of one per event keeps replay off the per-chunk overhead
     const write = (notice: Notice) =>
-      notice.type === "event"
-        ? sse.writeSSE({ id: `${store.id}:${notice.entry.seq}`, data: JSON.stringify(notice.entry.event) })
+      notice.type === "events"
+        ? sse.write(frames(notice.entries))
         : sse.writeSSE({ event: "forget", data: notice.sessionId });
     const pending: Notice[] = [];
     let replaying = true;
@@ -26,11 +30,14 @@ export const stream = (store: Store) => (c: Context) =>
     });
     if (after === 0) await sse.writeSSE({ event: "reset", data: store.id });
     let last = after;
-    for (const entry of store.since(after)) {
-      await write({ type: "event", entry });
-      last = entry.seq;
+    for (const page of store.since(after)) {
+      await sse.write(frames(page));
+      last = page[page.length - 1].seq;
     }
-    for (const notice of pending) if (notice.type === "forget" || notice.entry.seq > last) await write(notice);
+    for (const notice of pending) {
+      if (notice.type === "forget") await write(notice);
+      else await write({ type: "events", entries: notice.entries.filter((entry) => entry.seq > last) });
+    }
     replaying = false;
     while (!sse.aborted) {
       // why: Bun closes a connection after 10 s without bytes, and proxies drop quiet streams

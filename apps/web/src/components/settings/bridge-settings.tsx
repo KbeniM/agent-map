@@ -1,10 +1,11 @@
-import { type BridgeConnection, bridgeConnectionSchema } from "@agent-map/shared/config";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { type BridgeConnection, bridgeConnectionSchema } from "@rancher/shared/config";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { type Connection, useGraphs } from "@/stores/graph";
 import { type Bridge, usePreferences } from "@/stores/preferences";
@@ -31,37 +32,36 @@ function BridgeForm({ bridge, onDone }: { bridge?: Bridge; onDone: () => void })
   const error = (name: keyof BridgeConnection) => form.formState.errors[name]?.message;
 
   return (
-    <form
-      onSubmit={submit}
-      className="my-2 flex flex-col gap-3 rounded-xl border border-border/80 bg-secondary/45 p-3.5"
-    >
-      {(["name", "url", "token"] as const).map((name) => (
-        <div key={name} className="flex flex-col gap-1">
-          <Label htmlFor={`bridge-${name}`} className="type-caption text-muted-foreground capitalize">
-            {name === "url" ? "URL" : name}
-          </Label>
-          <Input
-            id={`bridge-${name}`}
-            type={name === "token" ? "password" : "text"}
-            autoComplete="off"
-            spellCheck={false}
-            aria-invalid={Boolean(error(name))}
-            placeholder={name === "token" ? "Only for a bridge with AGENT_MAP_TOKEN" : undefined}
-            className={name === "name" ? "" : "font-mono"}
-            {...form.register(name)}
-          />
-          {error(name) && <span className="type-caption text-destructive">{error(name)}</span>}
-        </div>
-      ))}
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={onDone}>
-          Cancel
-        </Button>
-        <Button type="submit" variant="primary" size="sm">
-          Save
-        </Button>
-      </div>
-    </form>
+    <Card size="sm" className="my-2">
+      <CardContent>
+        <form onSubmit={submit} className="flex flex-col gap-3">
+          {(["name", "url", "token"] as const).map((name) => (
+            <Field key={name} data-invalid={Boolean(error(name))}>
+              <FieldLabel htmlFor={`bridge-${name}`}>{name === "url" ? "URL" : name}</FieldLabel>
+              <Input
+                id={`bridge-${name}`}
+                type={name === "token" ? "password" : "text"}
+                autoComplete="off"
+                spellCheck={false}
+                aria-invalid={Boolean(error(name))}
+                placeholder={name === "token" ? "Only for a bridge with RANCHER_TOKEN" : undefined}
+                className={name === "name" ? undefined : "font-mono"}
+                {...form.register(name)}
+              />
+              <FieldError errors={[form.formState.errors[name]]} />
+            </Field>
+          ))}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onDone}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm">
+              Save
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -70,6 +70,7 @@ function BridgeRow({ bridge, removable }: { bridge: Bridge; removable: boolean }
   const { saveBridge, removeBridge } = usePreferences();
   const connection = useGraphs((state) => state.connections[bridge.id]);
   if (editing) return <BridgeForm bridge={bridge} onDone={() => setEditing(false)} />;
+  const connecting = bridge.enabled && (connection ?? "connecting") === "connecting";
   return (
     <li className="flex items-center gap-3 py-2">
       <div className="flex min-w-0 flex-1 flex-col">
@@ -77,7 +78,11 @@ function BridgeRow({ bridge, removable }: { bridge: Bridge; removable: boolean }
         <span className="type-caption truncate font-mono text-muted-foreground">{bridge.url}</span>
         <span
           className={
-            connection === "unauthorized" ? "type-caption text-destructive" : "type-caption text-muted-foreground"
+            connection === "unauthorized"
+              ? "type-caption text-destructive"
+              : connecting
+                ? "shimmer type-caption text-muted-foreground"
+                : "type-caption text-muted-foreground"
           }
         >
           {bridge.enabled ? STATES[connection ?? "connecting"] : "Off"}

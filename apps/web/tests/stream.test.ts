@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { AgentEvent } from "@agent-map/shared/events";
+import type { AgentEvent } from "@rancher/shared/events";
 import { createMessageDispatcher, follow } from "../src/lib/bridge-stream";
 import type { Message } from "../src/lib/sse";
 import type { Connection } from "../src/stores/graph";

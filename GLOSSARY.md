@@ -1,4 +1,4 @@
-# Agent Map
+# Rancher
 
 A live 3D map of every coding-agent session on this machine: who spawned whom, and which tool calls are running.
 
@@ -17,7 +17,7 @@ A harness's own callback that hands one activity record to a command or URL as i
 _Avoid_: Webhook, trigger, callback
 
 **Forwarder**:
-The small `agent-map-hook` script that posts a hook's payload to a bridge.
+The small `rancher-hook` script that posts a hook's payload to a bridge.
 _Avoid_: Shim, relay, agent
 
 **Adapter**:

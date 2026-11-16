@@ -1,6 +1,6 @@
 # Contributing
 
-Agent Map is MIT-licensed. Issues and pull requests are welcome.
+Rancher is MIT-licensed. Issues and pull requests are welcome.
 
 ## Set up
 

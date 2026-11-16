@@ -1,4 +1,3 @@
-import type { Provider } from "@agent-map/shared/providers";
 import {
   CheckListIcon,
   ComputerTerminal01Icon,
@@ -23,6 +22,7 @@ import meta from "@lobehub/icons-static-svg/icons/meta-color.svg?raw";
 import mistral from "@lobehub/icons-static-svg/icons/mistral-color.svg?raw";
 import openai from "@lobehub/icons-static-svg/icons/openai.svg?raw";
 import qwen from "@lobehub/icons-static-svg/icons/qwen-color.svg?raw";
+import type { Provider } from "@rancher/shared/providers";
 
 const LOGOS: Record<Exclude<Provider, "unknown">, string> = {
   anthropic,
@@ -78,3 +78,17 @@ const TOOL_ICONS: [RegExp, IconSvgElement][] = [
 export const AGENT_ICON = RoboticIcon;
 
 export const toolIcon = (name: string) => TOOL_ICONS.find(([pattern]) => pattern.test(name))?.[1] ?? Wrench01Icon;
+
+const escapeAttribute = (value: string) => value.replace(/[&<"]/g, (char) => `&#${char.charCodeAt(0)};`);
+const kebab = (name: string) => name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+
+// why: the map turns icons into textures; serialising the icon data directly keeps react-dom/server out of the bundle
+export function iconMarkup(icon: IconSvgElement, size: number, strokeWidth: number) {
+  const children = icon.map(([tag, attributes]) => {
+    const pairs = Object.entries({ ...attributes, strokeWidth })
+      .filter(([name]) => name !== "key")
+      .map(([name, value]) => `${kebab(name)}="${escapeAttribute(String(value))}"`);
+    return `<${tag} ${pairs.join(" ")}></${tag}>`;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" color="white" stroke-width="${strokeWidth}" stroke="currentColor">${children.join("")}</svg>`;
+}

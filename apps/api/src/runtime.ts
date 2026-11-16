@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { type AdapterInfo, type BridgeSettings, bridgeSettingsSchema } from "@agent-map/shared/config";
+import { type AdapterInfo, type BridgeSettings, bridgeSettingsSchema } from "@rancher/shared/config";
 import { pathFromEnv } from "./env";
 import type { Store } from "./events/store";
 import type { Adapter } from "./harness/adapter";

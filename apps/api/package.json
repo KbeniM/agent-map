@@ -1,5 +1,5 @@
 {
-  "name": "@agent-map/api",
+  "name": "@rancher/api",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -16,7 +16,7 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@agent-map/shared": "workspace:*",
+    "@rancher/shared": "workspace:*",
     "@hono/bun": "1.0.1",
     "@hono/zod-validator": "0.9.1",
     "drizzle-orm": "0.45.4",

@@ -1,5 +1,5 @@
 {
-  "name": "@agent-map/shared",
+  "name": "@rancher/shared",
   "private": true,
   "type": "module",
   "exports": {

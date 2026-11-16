@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { InvalidPayload } from "../../src/harness/adapter";
-import { antigravity } from "../../src/harness/antigravity";
+import { antigravity, parseAntigravityTranscript } from "../../src/harness/antigravity";
 
 const send = (payload: unknown) => antigravity.hook?.(payload) ?? [];
 const common = {
@@ -60,5 +60,60 @@ describe("antigravity hooks", () => {
     expect(() => send({ conversationId: "c1" })).toThrow(InvalidPayload);
     expect(hook("Stop", { executionNum: 1, terminationReason: "done", fullyIdle: true })).toEqual([]);
     expect(hook("Mystery")).toEqual([]);
+  });
+});
+
+describe("antigravity transcripts", () => {
+  test("parses user input, planner tool calls, tool completion and malformed lines", () => {
+    const state = { sessionId: "ag1", titled: false, pendingTools: [] as string[], fallbackAt: "2026-11-16T10:00:00Z" };
+    const at = "2026-11-16T10:01:00.000Z";
+    expect(
+      parseAntigravityTranscript(
+        JSON.stringify({
+          step_index: 0,
+          type: "USER_INPUT",
+          created_at: at,
+          content: "<t3_code_instructions>skip</t3_code_instructions>\n<user_request>Fix bug</user_request>",
+        }),
+        state,
+      ),
+    ).toEqual([
+      { type: "session.started", sessionId: "ag1", at, harness: "antigravity", title: "Fix bug" },
+      { type: "message", sessionId: "ag1", at, agentId: "ag1", role: "user", text: "Fix bug" },
+    ]);
+
+    expect(
+      parseAntigravityTranscript(
+        JSON.stringify({
+          step_index: 1,
+          type: "PLANNER_RESPONSE",
+          created_at: at,
+          content: "Checking",
+          tool_calls: [{ name: "view_file", args: { AbsolutePath: "/repo/a.ts" } }],
+        }),
+        state,
+      ),
+    ).toEqual([
+      { type: "message", sessionId: "ag1", at, agentId: "ag1", role: "assistant", text: "Checking" },
+      {
+        type: "tool.started",
+        sessionId: "ag1",
+        at,
+        agentId: "ag1",
+        toolId: "ag1:1:0",
+        name: "view_file",
+        summary: "/repo/a.ts",
+      },
+    ]);
+
+    expect(
+      parseAntigravityTranscript(
+        JSON.stringify({ step_index: 2, type: "VIEW_FILE", status: "ERROR", created_at: at }),
+        state,
+      ),
+    ).toEqual([{ type: "tool.finished", sessionId: "ag1", at, toolId: "ag1:1:0", ok: false }]);
+
+    expect(parseAntigravityTranscript("{bad json", state)).toEqual([]);
+    expect(parseAntigravityTranscript(JSON.stringify({ status: "DONE" }), state)).toEqual([]);
   });
 });

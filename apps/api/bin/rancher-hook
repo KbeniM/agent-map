@@ -1,0 +1,15 @@
+#!/bin/sh
+# Forwards one hook payload from stdin to the rancher bridge, then answers "{}" so the harness continues.
+# Usage in a harness hook config: rancher-hook <adapter> [event]   (e.g. cursor, codex, copilot-cli preToolUse)
+# Env: RANCHER_URL (default http://127.0.0.1:4000), RANCHER_TOKEN (optional bearer token).
+adapter="${1:?usage: rancher-hook <adapter>}"
+url="${RANCHER_URL:-http://127.0.0.1:4000}/v1/hooks/$adapter${2:+?event=$2}"
+if [ -n "$RANCHER_TOKEN" ]; then
+  curl -sS -m 2 -X POST "$url" -H "content-type: application/json" \
+    -H "authorization: Bearer $RANCHER_TOKEN" --data-binary @- >/dev/null 2>&1
+else
+  curl -sS -m 2 -X POST "$url" -H "content-type: application/json" \
+    --data-binary @- >/dev/null 2>&1
+fi
+printf '{}\n'
+exit 0

@@ -40,14 +40,16 @@ describe("toMap", () => {
     expect(tools).toEqual(["tool:t6", "tool:t7", "tool:t8", "tool:t9"]);
   });
 
-  test("labels a subagent link with its task, then its answer once it stops", () => {
+  test("labels a subagent link with its latest message and timestamp", () => {
+    const t1 = "2026-11-16T10:00:01.000Z";
+    const t2 = "2026-11-16T10:00:02.000Z";
     const task: AgentEvent = {
       type: "message",
       sessionId: "s1",
       agentId: "a1",
       role: "user",
       text: "Find auth code",
-      at,
+      at: t1,
     };
     const answer: AgentEvent = {
       type: "message",
@@ -55,13 +57,12 @@ describe("toMap", () => {
       agentId: "a1",
       role: "assistant",
       text: "src/auth.ts",
-      at,
+      at: t2,
     };
-    const stop: AgentEvent = { type: "tool.finished", sessionId: "s1", toolId: "spawn", ok: true, at };
     const spawnLink = (more: AgentEvent[]) =>
       toMap(applyAll(emptyGraph(), [...events, ...more]), now).links.find((link) => link.type === "spawn");
-    expect(spawnLink([task, answer])?.label).toBe("Find auth code");
-    expect(spawnLink([task, answer, stop])?.label).toBe("src/auth.ts");
+    expect(spawnLink([task])).toMatchObject({ label: "Find auth code", labelAt: t1 });
+    expect(spawnLink([task, answer])).toMatchObject({ label: "src/auth.ts", labelAt: t2 });
   });
 
   test("gives each agent its provider", () => {

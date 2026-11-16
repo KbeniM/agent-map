@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { AgentEvent } from "@agent-map/shared/events";
+import type { AgentEvent } from "@rancher/shared/events";
 import type { Adapter, FileSource } from "./adapter";
 import { hookParser } from "./hooks";
 import { summarize } from "./pairing";

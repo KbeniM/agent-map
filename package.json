@@ -1,5 +1,5 @@
 {
-  "name": "agent-map",
+  "name": "rancher",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -7,11 +7,11 @@
   ],
   "scripts": {
     "prepare": "git config core.hooksPath .githooks",
-    "dev": "bun run --filter '@agent-map/api' --filter '@agent-map/web' dev",
+    "dev": "bun run --filter '@rancher/api' --filter '@rancher/web' dev",
     "demo": "bun --env-file=.env scripts/demo.ts",
     "desktop": "bun run --cwd apps/desktop dev",
     "desktop:build": "bun run --cwd apps/desktop build",
-    "build": "bun run --filter '@agent-map/web' build",
+    "build": "bun run --filter '@rancher/web' build",
     "typecheck": "bun run --filter '*' typecheck",
     "check": "biome check . && bun scripts/lint.ts",
     "format": "biome check --write .",
@@ -23,7 +23,7 @@
     "react-doctor": "react-doctor apps/web --no-telemetry"
   },
   "devDependencies": {
-    "@agent-map/shared": "workspace:*",
+    "@rancher/shared": "workspace:*",
     "@biomejs/biome": "2.6.6",
     "@playwright/test": "1.65.0",
     "@types/bun": "1.4.4",

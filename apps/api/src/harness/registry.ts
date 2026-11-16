@@ -8,9 +8,11 @@ import { cursor } from "./cursor";
 import { geminiCli } from "./gemini-cli";
 import { grok } from "./grok";
 import { opencode } from "./opencode";
+import { t3 } from "./t3";
 import { windsurf } from "./windsurf";
 
 export const ADAPTERS: Adapter[] = [
+  t3,
   claudeCode,
   codex,
   cursor,

@@ -9,7 +9,7 @@ import { createRuntime } from "../src/runtime";
 export const at = "2026-11-16T10:00:00.000Z";
 
 export async function bridge(options: { token?: string; adapters?: Adapter[] } = {}) {
-  const dataDir = await mkdtemp(join(tmpdir(), "agent-map-test-"));
+  const dataDir = await mkdtemp(join(tmpdir(), "rancher-test-"));
   const store = createStore(":memory:");
   const runtime = createRuntime({
     adapters: options.adapters ?? [],

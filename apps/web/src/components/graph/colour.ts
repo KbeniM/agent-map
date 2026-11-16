@@ -11,4 +11,20 @@ export const colourToken = (key: string) => `--data-${PALETTE[hash(key) % PALETT
 
 export const sessionColour = (key: string) => `var(${colourToken(key)})`;
 
-export const token = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+let cacheKey = "";
+const tokenCache = new Map<string, string>();
+
+export function token(name: string) {
+  const root = document.documentElement;
+  const nextKey = `${root.className}|${root.dataset.colorMode ?? ""}`;
+  if (nextKey !== cacheKey) {
+    cacheKey = nextKey;
+    tokenCache.clear();
+  }
+  let value = tokenCache.get(name);
+  if (value === undefined) {
+    value = getComputedStyle(root).getPropertyValue(name).trim();
+    tokenCache.set(name, value);
+  }
+  return value;
+}

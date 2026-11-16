@@ -1,35 +1,53 @@
+"use client";
+
 import { cn } from "cn";
 import { Slider as SliderPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
 
 function Slider({
   className,
-  value,
   defaultValue,
-  "aria-label": label,
+  value,
+  min = 0,
+  max = 100,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root>) {
-  const thumbs = (value ?? defaultValue ?? [0]).length;
+  const _values = React.useMemo(
+    () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
+    [value, defaultValue, min, max],
+  );
+
   return (
     <SliderPrimitive.Root
       data-slot="slider"
-      value={value}
       defaultValue={defaultValue}
-      className={cn("relative flex h-5 w-full touch-none items-center select-none data-disabled:opacity-50", className)}
+      value={value}
+      min={min}
+      max={max}
+      className={cn(
+        "relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
+        className,
+      )}
       {...props}
     >
       <SliderPrimitive.Track
         data-slot="slider-track"
-        className="relative h-1.5 grow overflow-hidden rounded-full bg-input"
+        className="relative grow overflow-hidden bg-input/50 data-horizontal:h-0.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-0.5"
       >
-        <SliderPrimitive.Range data-slot="slider-range" className="absolute h-full rounded-full bg-primary" />
+        <SliderPrimitive.Range
+          data-slot="slider-range"
+          className="absolute bg-primary select-none data-horizontal:h-full data-vertical:w-full"
+        />
       </SliderPrimitive.Track>
-      {Array.from({ length: thumbs }, (_, index) => (
+      {Array.from({ length: _values.length }, (_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
-          aria-label={label}
-          className="block size-4 rounded-full border border-primary/50 bg-background shadow-sm pointer-coarse:size-6 transition-transform duration-100 hover:scale-110 active:scale-115"
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          className="block size-3 shrink-0 border-none bg-primary transition-colors select-none hover:ring-2 hover:ring-ring/30 focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
         />
       ))}
     </SliderPrimitive.Root>

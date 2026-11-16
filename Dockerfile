@@ -7,7 +7,7 @@ COPY packages/shared/package.json packages/shared/
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY apps apps
 COPY packages packages
-RUN VITE_BRIDGE_URL= bun run --filter '@agent-map/web' build
+RUN VITE_BRIDGE_URL= bun run --filter '@rancher/web' build
 
 FROM oven/bun:1.4.4
 WORKDIR /app

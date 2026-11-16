@@ -10,4 +10,4 @@ const extension = process.platform === "win32" ? ".exe" : "";
 const root = join(import.meta.dir, "..");
 const out = join(root, "apps/desktop/src-tauri/binaries");
 mkdirSync(out, { recursive: true });
-await $`bun build ${join(root, "apps/api/src/index.ts")} --compile --minify --outfile ${join(out, `agent-map-bridge-${triple}${extension}`)}`;
+await $`bun build ${join(root, "apps/api/src/index.ts")} --compile --minify --outfile ${join(out, `rancher-bridge-${triple}${extension}`)}`;

@@ -1,4 +1,4 @@
-import type { AgentEvent } from "@agent-map/shared/events";
+import type { AgentEvent } from "@rancher/shared/events";
 
 const url = process.env.VITE_BRIDGE_URL ?? "http://localhost:4000";
 const sessionId = `demo-${Date.now().toString(36)}`;

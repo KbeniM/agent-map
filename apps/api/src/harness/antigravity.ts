@@ -1,7 +1,9 @@
-import type { AgentEvent } from "@agent-map/shared/events";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import type { AgentEvent } from "@rancher/shared/events";
 import { z } from "zod";
-import { type Adapter, InvalidPayload } from "./adapter";
-import { clip, handlerFor, now, parseOrThrow, summarize, text } from "./pairing";
+import { type Adapter, type FileSource, InvalidPayload } from "./adapter";
+import { clip, handlerFor, isoOf, now, parseOrThrow, summarize, text } from "./pairing";
 
 const name = z.string().min(1).max(60).optional();
 const payloadSchema = z.looseObject({
@@ -100,9 +102,104 @@ const antigravityParser = () => {
   };
 };
 
+type FileState = { sessionId: string; titled: boolean; pendingTools: string[]; fallbackAt: string };
+
+const stepSchema = z.object({
+  step_index: z.number().optional(),
+  type: z.string(),
+  status: z.string().optional(),
+  created_at: z.string().optional(),
+  content: z.string().optional(),
+  tool_calls: z
+    .array(
+      z.object({
+        name: z.string().optional(),
+        args: z.record(z.string(), z.unknown()).optional(),
+        arguments: z.record(z.string(), z.unknown()).optional(),
+      }),
+    )
+    .optional(),
+});
+
+function cleanPrompt(raw: string | undefined) {
+  if (!raw) return undefined;
+  const cleaned = raw
+    .replace(/<t3_code_instructions>[\s\S]*?<\/t3_code_instructions>/gi, "")
+    .replace(/<\/?user_request>/gi, "")
+    .trim();
+  return clip(cleaned, 1000);
+}
+
+export function parseAntigravityTranscript(raw: string, state: FileState): AgentEvent[] {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  const parsed = stepSchema.safeParse(value);
+  if (!parsed.success) return [];
+  const step = parsed.data;
+  const at = step.created_at ? isoOf(step.created_at) : state.fallbackAt;
+  const { sessionId } = state;
+
+  if (step.type === "USER_INPUT") {
+    const input = cleanPrompt(step.content);
+    if (!input) return [];
+    const title = state.titled ? undefined : input.split("\n")[0].slice(0, 80);
+    state.titled = true;
+    return [
+      ...(title ? [{ type: "session.started" as const, sessionId, at, harness: "antigravity", title }] : []),
+      { type: "message", sessionId, at, agentId: sessionId, role: "user", text: input },
+    ];
+  }
+
+  if (step.type === "PLANNER_RESPONSE") {
+    const events: AgentEvent[] = [];
+    if (!state.titled) {
+      state.titled = true;
+      events.push({ type: "session.started", sessionId, at, harness: "antigravity" });
+    }
+    const reply = clip(step.content, 1000);
+    if (reply) events.push({ type: "message", sessionId, at, agentId: sessionId, role: "assistant", text: reply });
+    step.tool_calls?.forEach((call, index) => {
+      if (!call.name) return;
+      const toolId = `${sessionId}:${step.step_index ?? "s"}:${index}`;
+      state.pendingTools.push(toolId);
+      events.push({
+        type: "tool.started",
+        sessionId,
+        at,
+        agentId: sessionId,
+        toolId,
+        name: clip(call.name, 120) ?? call.name,
+        summary: summary(call.args ?? call.arguments),
+      });
+    });
+    return events;
+  }
+
+  const finishedId = state.pendingTools.shift();
+  return finishedId && step.status
+    ? [{ type: "tool.finished", sessionId, at, toolId: finishedId, ok: step.status !== "ERROR" }]
+    : [];
+}
+
+const transcripts: FileSource<FileState> = {
+  defaultPath: join(homedir(), ".gemini", "antigravity", "brain"),
+  globs: ["*/.system_generated/logs/transcript.jsonl"],
+  mode: "append",
+  open(relative, _absolute, mtime) {
+    const sessionId = relative.split("/")[0] || relative;
+    return { state: { sessionId, titled: false, pendingTools: [], fallbackAt: mtime.toISOString() } };
+  },
+  parse: (chunk, state) => chunk.split("\n").flatMap((line) => (line ? parseAntigravityTranscript(line, state) : [])),
+};
+
 export const antigravity: Adapter = {
   id: "antigravity",
   name: "Antigravity",
   harness: "antigravity",
+  files: transcripts,
   hook: antigravityParser(),
 };

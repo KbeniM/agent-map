@@ -1,7 +1,9 @@
-import type { AgentEvent } from "@agent-map/shared/events";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import type { AgentEvent } from "@rancher/shared/events";
 import { z } from "zod";
-import { type Adapter, InvalidPayload } from "./adapter";
-import { clip, fifoPairing, now, summarize } from "./pairing";
+import { type Adapter, type FileSource, InvalidPayload } from "./adapter";
+import { clip, fifoPairing, isoOf, now, summarize } from "./pairing";
 
 const text = z.string().max(100_000);
 const id = z.string().min(1).max(200);
@@ -107,10 +109,146 @@ const stamp = (timestamp: number | undefined) => {
   return date && !Number.isNaN(date.getTime()) ? date.toISOString() : now();
 };
 
+type FileState = { sessionId: string; titled: boolean; model?: string; cwd?: string };
+
+const lineSchema = z.object({
+  type: z.string(),
+  timestamp: z.string().optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
+});
+
+export function parseCopilotTranscript(raw: string, state: FileState): AgentEvent[] {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  const parsed = lineSchema.safeParse(value);
+  if (!parsed.success) return [];
+  const { type, timestamp, data = {} } = parsed.data;
+  const at = isoOf(timestamp);
+
+  if (type === "session.start") {
+    if (typeof data.sessionId === "string" && data.sessionId) state.sessionId = data.sessionId.slice(0, 200);
+    const ctx = data.context as { cwd?: unknown } | undefined;
+    state.cwd = clip(ctx?.cwd, 500) ?? state.cwd;
+    return [
+      {
+        type: "session.started",
+        sessionId: state.sessionId,
+        at: isoOf(typeof data.startTime === "string" ? data.startTime : timestamp),
+        harness: "copilot-cli",
+        cwd: state.cwd,
+      },
+    ];
+  }
+
+  if (type === "user.message") {
+    const body = clip(data.content, 1000);
+    if (!body) return [];
+    const title = state.titled ? undefined : body.split("\n")[0].slice(0, 80);
+    state.titled = true;
+    return [
+      ...(title
+        ? [
+            {
+              type: "session.started" as const,
+              sessionId: state.sessionId,
+              at,
+              harness: "copilot-cli",
+              cwd: state.cwd,
+              title,
+            },
+          ]
+        : []),
+      { type: "message", sessionId: state.sessionId, at, agentId: state.sessionId, role: "user", text: body },
+    ];
+  }
+
+  if (type === "assistant.message") {
+    const body = clip(data.content, 1000);
+    return body
+      ? [
+          {
+            type: "message",
+            sessionId: state.sessionId,
+            at,
+            agentId: state.sessionId,
+            role: "assistant",
+            text: body,
+            model: state.model,
+          },
+        ]
+      : [];
+  }
+
+  if (type === "tool.execution_start") {
+    const toolId = typeof data.toolCallId === "string" ? data.toolCallId.slice(0, 200) : undefined;
+    const name = clip(data.toolName, 120);
+    if (!toolId || !name) return [];
+    return [
+      {
+        type: "tool.started",
+        sessionId: state.sessionId,
+        at,
+        agentId: state.sessionId,
+        toolId,
+        name,
+        summary: argsSummary(data.arguments),
+      },
+    ];
+  }
+
+  if (type === "tool.execution_complete") {
+    state.model = clip(data.model, 120) ?? state.model;
+    const toolId = typeof data.toolCallId === "string" ? data.toolCallId.slice(0, 200) : undefined;
+    return toolId
+      ? [{ type: "tool.finished", sessionId: state.sessionId, at, toolId, ok: data.success !== false }]
+      : [];
+  }
+
+  if (type === "subagent.started") {
+    const toolId = typeof data.toolCallId === "string" ? data.toolCallId.slice(0, 200) : undefined;
+    const name = clip(data.agentDisplayName ?? data.agentName, 120);
+    if (!toolId || !name) return [];
+    return [
+      {
+        type: "agent.started",
+        sessionId: state.sessionId,
+        at,
+        agentId: toolId,
+        name,
+        parentToolId: toolId,
+      },
+    ];
+  }
+
+  if (type === "subagent.completed") {
+    state.model = clip(data.model, 120) ?? state.model;
+    const toolId = typeof data.toolCallId === "string" ? data.toolCallId.slice(0, 200) : undefined;
+    return toolId ? [{ type: "agent.stopped", sessionId: state.sessionId, at, agentId: toolId }] : [];
+  }
+
+  return [];
+}
+
+const transcripts: FileSource<FileState> = {
+  defaultPath: join(homedir(), ".copilot", "session-state"),
+  globs: ["*/events.jsonl"],
+  mode: "append",
+  open(relative) {
+    const sessionId = relative.split("/")[0] || relative;
+    return { state: { sessionId, titled: false } };
+  },
+  parse: (chunk, state) => chunk.split("\n").flatMap((line) => (line ? parseCopilotTranscript(line, state) : [])),
+};
+
 export const copilotCli: Adapter = {
   id: "copilot-cli",
   name: "GitHub Copilot CLI",
   harness: "copilot-cli",
+  files: transcripts,
   hook(raw) {
     const parsed = payloadSchema.safeParse(raw);
     if (!parsed.success)

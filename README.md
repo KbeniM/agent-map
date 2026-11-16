@@ -1,4 +1,4 @@
-# Agent Map
+# Rancher
 
 A live 3D map of your coding-agent sessions: every session, agent and subagent, who spawned whom, the messages between them and the tool calls running right now.
 
@@ -23,7 +23,7 @@ bun run dev        # bridge on :4000, map on :5173
 **Hosted, for cloud sessions.**
 
 ```sh
-AGENT_MAP_TOKEN=$(openssl rand -hex 32) docker compose up -d   # map and bridge on :4000
+RANCHER_TOKEN=$(openssl rand -hex 32) docker compose up -d   # map and bridge on :4000
 ```
 
 Claude Code and Codex sessions on the same machine show up on their own. For every other harness, open **Settings → Harnesses → Set up** for the exact hook configuration. Cloud sessions (Claude Code on the web) send hooks to a hosted bridge; add it with its token under **Settings → Bridges**.

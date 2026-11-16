@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { InvalidPayload } from "../../src/harness/adapter";
-import { copilotCli } from "../../src/harness/copilot-cli";
+import { copilotCli, parseCopilotTranscript } from "../../src/harness/copilot-cli";
 
 const ms = Date.parse("2026-11-16T10:00:00.000Z");
 const at = "2026-11-16T10:00:00.000Z";
@@ -104,5 +104,102 @@ describe("copilot-cli hook", () => {
 
   test("unknown events return nothing", () => {
     expect(hook(base("s9", "errorOccurred"))).toEqual([]);
+  });
+});
+
+describe("copilot-cli transcripts", () => {
+  test("parses session start, messages, tool runs, subagents and malformed lines", () => {
+    const state = { sessionId: "dir1", titled: false };
+    expect(
+      parseCopilotTranscript(
+        JSON.stringify({
+          type: "session.start",
+          timestamp: at,
+          data: { sessionId: "cop1", startTime: at, context: { cwd: "/repo" } },
+        }),
+        state,
+      ),
+    ).toEqual([{ type: "session.started", sessionId: "cop1", at, harness: "copilot-cli", cwd: "/repo" }]);
+
+    expect(
+      parseCopilotTranscript(
+        JSON.stringify({ type: "user.message", timestamp: at, data: { content: "Build it" } }),
+        state,
+      ),
+    ).toEqual([
+      { type: "session.started", sessionId: "cop1", at, harness: "copilot-cli", cwd: "/repo", title: "Build it" },
+      { type: "message", sessionId: "cop1", at, agentId: "cop1", role: "user", text: "Build it" },
+    ]);
+
+    expect(
+      parseCopilotTranscript(
+        JSON.stringify({
+          type: "tool.execution_start",
+          timestamp: at,
+          data: { toolCallId: "tc1", toolName: "bash", arguments: { command: "bun test" } },
+        }),
+        state,
+      ),
+    ).toEqual([
+      {
+        type: "tool.started",
+        sessionId: "cop1",
+        at,
+        agentId: "cop1",
+        toolId: "tc1",
+        name: "bash",
+        summary: "bun test",
+      },
+    ]);
+
+    expect(
+      parseCopilotTranscript(
+        JSON.stringify({
+          type: "tool.execution_complete",
+          timestamp: at,
+          data: { toolCallId: "tc1", model: "gpt-5.3-codex", success: false },
+        }),
+        state,
+      ),
+    ).toEqual([{ type: "tool.finished", sessionId: "cop1", at, toolId: "tc1", ok: false }]);
+
+    expect(
+      parseCopilotTranscript(
+        JSON.stringify({ type: "assistant.message", timestamp: at, data: { content: "Done" } }),
+        state,
+      ),
+    ).toEqual([
+      {
+        type: "message",
+        sessionId: "cop1",
+        at,
+        agentId: "cop1",
+        role: "assistant",
+        text: "Done",
+        model: "gpt-5.3-codex",
+      },
+    ]);
+
+    expect(
+      parseCopilotTranscript(
+        JSON.stringify({
+          type: "subagent.started",
+          timestamp: at,
+          data: { toolCallId: "sa1", agentName: "explore", agentDisplayName: "Explore Agent" },
+        }),
+        state,
+      ),
+    ).toEqual([
+      { type: "agent.started", sessionId: "cop1", at, agentId: "sa1", name: "Explore Agent", parentToolId: "sa1" },
+    ]);
+    expect(
+      parseCopilotTranscript(
+        JSON.stringify({ type: "subagent.completed", timestamp: at, data: { toolCallId: "sa1" } }),
+        state,
+      ),
+    ).toEqual([{ type: "agent.stopped", sessionId: "cop1", at, agentId: "sa1" }]);
+
+    expect(parseCopilotTranscript("{broken", state)).toEqual([]);
+    expect(parseCopilotTranscript(JSON.stringify({ timestamp: at }), state)).toEqual([]);
   });
 });

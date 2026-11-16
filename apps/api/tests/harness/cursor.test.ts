@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { InvalidPayload } from "../../src/harness/adapter";
-import { cursor } from "../../src/harness/cursor";
+import { cursor, parseCursorTranscript } from "../../src/harness/cursor";
 
 const base = (conversation_id: string, hook_event_name: string, extra: object = {}) => ({
   conversation_id,
@@ -112,5 +112,72 @@ describe("cursor hook", () => {
 
   test("unknown events return nothing", () => {
     expect(hook(base("c7", "afterFileEdit"))).toEqual([]);
+  });
+});
+
+describe("cursor transcripts", () => {
+  test("parses root prompts, tools, subagents and malformed lines", () => {
+    const state = {
+      sessionId: "cur1",
+      agentId: "cur1",
+      started: false,
+      baseMs: Date.parse("2026-11-16T10:00:00.000Z"),
+      seq: 0,
+      openTools: [] as string[],
+    };
+    expect(
+      strip(
+        parseCursorTranscript(
+          JSON.stringify({
+            role: "user",
+            message: {
+              content: [{ type: "text", text: "<timestamp>Mon</timestamp>\n<user_query>\nScan\n</user_query>" }],
+            },
+          }),
+          state,
+        ),
+      ),
+    ).toEqual([
+      { type: "session.started", sessionId: "cur1", harness: "cursor", title: "Scan" },
+      { type: "message", sessionId: "cur1", agentId: "cur1", role: "user", text: "Scan" },
+    ]);
+
+    expect(
+      strip(
+        parseCursorTranscript(
+          JSON.stringify({
+            role: "assistant",
+            message: {
+              content: [
+                { type: "text", text: "Running" },
+                { type: "tool_use", name: "Shell", input: { command: "ls" } },
+              ],
+            },
+          }),
+          state,
+        ),
+      ),
+    ).toMatchObject([
+      { type: "message", role: "assistant", text: "Running" },
+      { type: "tool.started", name: "Shell", summary: "ls" },
+    ]);
+
+    expect(
+      strip(parseCursorTranscript(JSON.stringify({ role: "assistant", message: { content: "Done" } }), state)),
+    ).toMatchObject([
+      { type: "tool.finished", ok: true },
+      { type: "message", role: "assistant", text: "Done" },
+    ]);
+
+    const subState = { ...state, agentId: "sub1", started: false, openTools: [] as string[] };
+    expect(
+      strip(parseCursorTranscript(JSON.stringify({ role: "user", message: { content: "Sub task" } }), subState)),
+    ).toEqual([
+      { type: "agent.started", sessionId: "cur1", agentId: "sub1", name: "subagent", parentAgentId: "cur1" },
+      { type: "message", sessionId: "cur1", agentId: "sub1", role: "user", text: "Sub task" },
+    ]);
+
+    expect(parseCursorTranscript("not-json", state)).toEqual([]);
+    expect(parseCursorTranscript(JSON.stringify({ role: "system", message: { content: "x" } }), state)).toEqual([]);
   });
 });

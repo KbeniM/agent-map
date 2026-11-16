@@ -1,6 +1,9 @@
-import type { AgentEvent } from "@agent-map/shared/events";
+import { statSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import type { AgentEvent } from "@rancher/shared/events";
 import { z } from "zod";
-import { type Adapter, InvalidPayload } from "./adapter";
+import { type Adapter, type FileSource, InvalidPayload } from "./adapter";
 import { clip, now, summarize } from "./pairing";
 
 const text = z.string().max(100_000);
@@ -127,10 +130,150 @@ const scopeOf = (p: Payload): Scope => {
   return { sessionId: root ?? p.conversation_id, agentId: p.conversation_id, at: now() };
 };
 
+type FileState = {
+  sessionId: string;
+  agentId: string;
+  started: boolean;
+  baseMs: number;
+  seq: number;
+  openTools: string[];
+};
+
+const blockSchema = z.object({
+  type: z.string(),
+  text: z.string().optional(),
+  id: z.string().optional(),
+  name: z.string().optional(),
+  input: z.record(z.string(), z.unknown()).optional(),
+  tool_use_id: z.string().optional(),
+  is_error: z.boolean().optional(),
+});
+
+const transcriptLineSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  message: z.object({
+    content: z.union([z.string(), z.array(blockSchema)]),
+  }),
+});
+
+function cleanCursorText(raw: string) {
+  return raw
+    .replace(/<timestamp>[\s\S]*?<\/timestamp>/gi, "")
+    .replace(/<\/?user_query>/gi, "")
+    .trim();
+}
+
+export function parseCursorTranscript(raw: string, state: FileState): AgentEvent[] {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  const parsed = transcriptLineSchema.safeParse(value);
+  if (!parsed.success) return [];
+  const at = new Date(state.baseMs + state.seq++).toISOString();
+  const { sessionId, agentId } = state;
+  const events: AgentEvent[] = [];
+  const blocks =
+    typeof parsed.data.message.content === "string"
+      ? [{ type: "text", text: parsed.data.message.content }]
+      : parsed.data.message.content;
+
+  while (state.openTools.length > 0) {
+    const toolId = state.openTools.shift();
+    if (toolId) events.push({ type: "tool.finished", sessionId, at, toolId, ok: true });
+  }
+
+  const joined = clip(
+    cleanCursorText(
+      blocks
+        .filter((block) => block.type === "text" && block.text)
+        .map((block) => block.text ?? "")
+        .join("\n"),
+    ),
+    1000,
+  );
+
+  if (!state.started) {
+    state.started = true;
+    if (agentId === sessionId) {
+      events.push({
+        type: "session.started",
+        sessionId,
+        at,
+        harness: "cursor",
+        title: joined?.split("\n")[0].slice(0, 80),
+      });
+    } else {
+      events.push({
+        type: "agent.started",
+        sessionId,
+        at,
+        agentId,
+        name: "subagent",
+        parentAgentId: sessionId,
+      });
+    }
+  }
+
+  if (joined) events.push({ type: "message", sessionId, at, agentId, role: parsed.data.role, text: joined });
+
+  if (parsed.data.role === "assistant") {
+    blocks.forEach((block, index) => {
+      if (block.type === "tool_use" && block.name) {
+        const toolId = (block.id && block.id.slice(0, 200)) || `${agentId}:${state.seq}:${index}`;
+        state.openTools.push(toolId);
+        events.push({
+          type: "tool.started",
+          sessionId,
+          at,
+          agentId,
+          toolId,
+          name: clip(block.name, 120) ?? block.name,
+          summary: summarize(block.input),
+        });
+      } else if (block.type === "tool_result" && block.tool_use_id) {
+        const toolId = block.tool_use_id.slice(0, 200);
+        const idx = state.openTools.indexOf(toolId);
+        if (idx !== -1) state.openTools.splice(idx, 1);
+        events.push({ type: "tool.finished", sessionId, at, toolId, ok: !block.is_error });
+      }
+    });
+  }
+
+  return events;
+}
+
+const transcripts: FileSource<FileState> = {
+  defaultPath: join(homedir(), ".cursor", "projects"),
+  globs: ["*/agent-transcripts/*/*.jsonl", "*/agent-transcripts/*/subagents/*.jsonl"],
+  mode: "append",
+  open(relative, absolute, mtime) {
+    const parts = relative.split("/");
+    const sessionId = parts[2] || relative;
+    const isSubagent = parts[3] === "subagents" && Boolean(parts[4]);
+    const agentId = isSubagent ? parts[4].replace(/\.jsonl$/, "") : sessionId;
+    const birth = statSync(absolute).birthtime.getTime();
+    return {
+      state: {
+        sessionId,
+        agentId,
+        started: false,
+        baseMs: birth > 0 ? birth : mtime.getTime(),
+        seq: 0,
+        openTools: [],
+      },
+    };
+  },
+  parse: (chunk, state) => chunk.split("\n").flatMap((line) => (line ? parseCursorTranscript(line, state) : [])),
+};
+
 export const cursor: Adapter = {
   id: "cursor",
   name: "Cursor",
   harness: "cursor",
+  files: transcripts,
   hook(raw) {
     const parsed = payloadSchema.safeParse(raw);
     if (!parsed.success) throw new InvalidPayload(parsed.error.issues[0]?.message ?? "Invalid Cursor hook payload");

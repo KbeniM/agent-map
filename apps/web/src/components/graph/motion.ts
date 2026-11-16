@@ -1,4 +1,5 @@
 import type { Object3D } from "three";
+import { demandFrames } from "./demand";
 
 type Tween = { from: number; start: number; duration: number };
 
@@ -19,12 +20,15 @@ function tick(now: number) {
     const base = object.userData.base as number;
     // why: about one breath per 1.4 s reads as activity without the slow 0.2 Hz sway that causes motion sickness
     const wave = (Math.sin((now / 1400) * Math.PI * 2) + 1) / 2;
-    object.scale.setScalar(base * (1 + 0.35 * wave));
+    object.scale.setScalar(base * (1 + 0.18 * wave));
     const material = (object as Object3D & { material?: { opacity: number } }).material;
-    if (material) material.opacity = 0.55 - 0.35 * wave;
+    if (material) material.opacity = 0.42 - 0.24 * wave;
   }
   running = tweens.size > 0 || pulses.size > 0;
-  if (running) requestAnimationFrame(tick);
+  if (running) {
+    demandFrames();
+    requestAnimationFrame(tick);
+  }
 }
 
 function run() {

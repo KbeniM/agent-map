@@ -1,11 +1,19 @@
-import { type AdapterInfo, type BridgeSettings, retentionSchema } from "@agent-map/shared/config";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Copy01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { type AdapterInfo, type BridgeSettings, retentionSchema } from "@rancher/shared/config";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { SheepLoader } from "@/components/sheep-loader";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  CodeBlock,
+  CodeBlockActions,
+  CodeBlockContent,
+  CodeBlockCopyButton,
+  CodeBlockHeader,
+  CodeBlockTitle,
+} from "@/components/ui/code-block";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { client, unwrap } from "@/lib/api";
@@ -31,33 +39,19 @@ function useBridgeSettings(bridge: Bridge) {
 }
 
 function CopyBlock({ snippet }: { snippet: Snippet }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    void navigator.clipboard.writeText(snippet.content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
   return (
     <div className="flex flex-col gap-1">
       <span className="type-caption text-muted-foreground">{snippet.title}</span>
       {snippet.content && (
-        <div className="overflow-hidden rounded-xl border border-border/80">
-          <div className="flex h-8 items-center justify-between border-b border-border/70 bg-secondary/65 pr-1.5 pl-3">
-            <span className="type-caption truncate font-mono text-muted-foreground">{snippet.file ?? "Terminal"}</span>
-            <Button variant="ghost" size="icon-xs" aria-label={copied ? "Copied" : "Copy"} onClick={copy}>
-              <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} className={copied ? "text-live" : undefined} />
-            </Button>
-          </div>
-          <pre
-            // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable code block must be reachable by keyboard to scroll it (WCAG 2.1.1)
-            tabIndex={0}
-            role="region"
-            aria-label={snippet.file ?? snippet.title}
-            className="type-caption max-h-56 overflow-auto overscroll-contain bg-background/60 p-3 font-mono"
-          >
-            {snippet.content}
-          </pre>
-        </div>
+        <CodeBlock size="sm">
+          <CodeBlockHeader>
+            <CodeBlockTitle className="font-mono text-muted-foreground">{snippet.file ?? "Terminal"}</CodeBlockTitle>
+            <CodeBlockActions>
+              <CodeBlockCopyButton value={snippet.content} />
+            </CodeBlockActions>
+          </CodeBlockHeader>
+          <CodeBlockContent className="max-h-56">{snippet.content}</CodeBlockContent>
+        </CodeBlock>
       )}
     </div>
   );
@@ -83,7 +77,7 @@ function AdapterRow({
   const snippets = SETUP[adapter.id]?.({ url: bridge.url, secured: Boolean(bridge.token) }) ?? [];
 
   return (
-    <li className="flex flex-col gap-2 py-2.5">
+    <li className="flex min-w-0 flex-col gap-2 py-2.5">
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="type-body font-medium">{adapter.name}</span>
@@ -153,7 +147,7 @@ function RetentionForm({
         </Field>
       ))}
       {form.formState.isDirty && (
-        <Button type="submit" variant="primary" size="sm" className="mt-1">
+        <Button type="submit" size="sm" className="mt-1">
           Save
         </Button>
       )}
@@ -173,12 +167,17 @@ export function AdapterSettings({ bridge }: { bridge: Bridge }) {
   if (failure) {
     const rejected = failure.message.includes("token");
     return (
-      <p role="alert" className="type-body py-3 text-destructive">
-        {rejected
-          ? `${bridge.name} rejected its token. Update the token in Bridges.`
-          : `Unable to reach ${bridge.url}. Start the bridge with bun run dev, or check the URL in Bridges.`}
-      </p>
+      <Alert variant="destructive" className="my-3">
+        <AlertDescription>
+          {rejected
+            ? `${bridge.name} rejected its token. Update the token in Bridges.`
+            : `Unable to reach ${bridge.url}. Start the bridge with bun run dev, or check the URL in Bridges.`}
+        </AlertDescription>
+      </Alert>
     );
+  }
+  if (adapters.isPending) {
+    return <SheepLoader label="Loading adapters…" className="py-4" />;
   }
   return (
     <>

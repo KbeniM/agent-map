@@ -12,11 +12,16 @@ Facts verified against official docs or source; everything else is listed as unv
 - Failure is not a field on tool outputs; the adapter reads `Process exited with code N`. Subagents are separate rollouts with `source.subagent.thread_spawn.parent_thread_id`.
 - Hooks: command only, Claude-style snake_case payloads, `model` on most events. Unverified: legacy vs paginated history mode default, `hooks.json` matcher schema.
 
+## T3 Code (local SQLite store, verified on a real install)
+- `~/.t3/userdata/statev2.sqlite` (WAL mode, companion `-wal` / `-shm`): `projection_projects` (`project_id`, `workspace_root`), `orchestration_v2_projection_threads` (`thread_id`, `project_id`, `title`, `default_provider`, `created_at`, `updated_at`, `deleted_at`), `orchestration_v2_projection_provider_sessions` (`payload_json.model`), `orchestration_v2_projection_runs` (`payload_json.modelSelection.model`), `orchestration_v2_projection_subagents` (`subagent_id`, `thread_id`, `provider`, `child_thread_id`, `status`, `started_at`, `completed_at`, `payload_json`), `orchestration_v2_projection_messages` (`thread_id`, `role`, `created_at`, `payload_json.text`), `orchestration_v2_projection_turn_items` (`turn_item_id`, `thread_id`, `type`, `status`, `updated_at`, `payload_json`).
+
 ## Cursor — https://cursor.com/docs/agent/hooks
+- Transcripts (verified on a real install): `~/.cursor/projects/<project>/agent-transcripts/<session>/<session>.jsonl` and `.../subagents/<agent>.jsonl`; lines `{role, message:{content: string | [{type:"text"|"tool_use"|"tool_result", text?, id?, name?, input?, tool_use_id?, is_error?}]}}` without per-line timestamps.
 - `~/.cursor/hooks.json` `{version:1, hooks:{event:[{command}]}}`, stdin JSON with `conversation_id`, `generation_id`, `model`; `preToolUse`/`postToolUse`/`postToolUseFailure` with `tool_use_id`; `subagentStart` with `subagent_id`, `tool_call_id`, `parent_conversation_id`, `subagent_model`.
 - Unverified: whether a subagent's own events use `subagent_id` as `conversation_id`; whether `cursor-agent` CLI runs hooks; what an empty stdout means for `preToolUse`.
 
 ## GitHub Copilot CLI — https://docs.github.com/en/copilot/reference/hooks-configuration
+- Transcripts (verified on a real install): `~/.copilot/session-state/<session>/events.jsonl`; JSONL `{type, timestamp, data}` covering `session.start`, `user.message`, `assistant.message`, `tool.execution_start`, `tool.execution_complete`, `subagent.started`, `subagent.completed`.
 - `~/.copilot/hooks/*.json`, camelCase stdin `sessionId`, `timestamp`, `toolName`, `toolArgs`, `toolResult.resultType`. No tool ids, no model, no event name in the payload.
 
 ## Gemini CLI — docs/hooks/reference.md in google-gemini/gemini-cli
@@ -27,7 +32,8 @@ Facts verified against official docs or source; everything else is listed as unv
 - camelCase `hookEventName`, `sessionId`, `toolName`, `toolInput`, `toolUseId`, `lastAssistantMessage`. Unverified: the prompt field name, the SubagentStart payload.
 
 ## Antigravity — https://antigravity.google/docs/hooks
-- `~/.gemini/config/hooks.json`; stdin `conversationId`, `workspacePaths`, `modelName`, `lastUserInput`, `toolCall{name,args}`, `stepIdx`, `error`. Event name field undocumented (sent as `?event=`). Conversation storage is protobuf, undocumented.
+- Transcripts (verified on a real install): `~/.gemini/antigravity/brain/<session>/.system_generated/logs/transcript.jsonl`; JSONL `{step_index, source, type, status, created_at, content, tool_calls}`.
+- `~/.gemini/config/hooks.json`; stdin `conversationId`, `workspacePaths`, `modelName`, `lastUserInput`, `toolCall{name,args}`, `stepIdx`, `error`. Event name field undocumented (sent as `?event=`). Conversation `.pb` storage is undocumented.
 
 ## OpenCode (anomalyco/opencode v1.2.27)
 - Plugins in `~/.config/opencode/plugins/`; the `event` hook receives every bus event: `session.created|updated` (`info.parentID`), `message.updated`, `message.part.updated` (tool parts with `callID` and `state.status`). Storage moved to SQLite in v1.2.0 (not used).

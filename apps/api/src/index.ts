@@ -2,9 +2,13 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { serveStatic } from "@hono/bun";
 // @ts-expect-error a file embedded with { type: "file" } has no TypeScript type; Bun resolves it to a path string
-import forwarder from "../bin/agent-map-hook" with { type: "file" };
-// @ts-expect-error a file embedded with { type: "file" } has no TypeScript type; Bun resolves it to a path string
 import plugin from "../bin/opencode-plugin.js" with { type: "file" };
+// @ts-expect-error a file embedded with { type: "file" } has no TypeScript type; Bun resolves it to a path string
+import forwarder from "../bin/rancher-hook" with { type: "file" };
+// @ts-expect-error a file embedded with { type: "file" } has no TypeScript type; Bun resolves it to a path string
+import forwarderCmd from "../bin/rancher-hook.cmd" with { type: "file" };
+// @ts-expect-error a file embedded with { type: "file" } has no TypeScript type; Bun resolves it to a path string
+import forwarderPs1 from "../bin/rancher-hook.ps1" with { type: "file" };
 import pkg from "../package.json";
 import { createApp } from "./app";
 import { env } from "./env";
@@ -13,8 +17,8 @@ import { ADAPTERS } from "./harness/registry";
 import { createRuntime } from "./runtime";
 
 // why: anything beyond loopback carries tool activity off the machine, so it must be authenticated
-if (!env.loopback && !env.AGENT_MAP_TOKEN) {
-  console.error(`Refusing to listen on ${env.HOST} without AGENT_MAP_TOKEN.`);
+if (!env.loopback && !env.RANCHER_TOKEN) {
+  console.error(`Refusing to listen on ${env.HOST} without RANCHER_TOKEN.`);
   process.exit(1);
 }
 
@@ -27,10 +31,12 @@ const runtime = createRuntime({
   defaults: { retentionDays: env.RETENTION_DAYS, sinceHours: env.SINCE_HOURS },
 });
 const stop = await runtime.start();
-const app = createApp({ store, runtime, token: env.AGENT_MAP_TOKEN, origins: env.origins, version: pkg.version });
+const app = createApp({ store, runtime, token: env.RANCHER_TOKEN, origins: env.origins, version: pkg.version });
 
 // why: the files are embedded so the compiled desktop sidecar serves them without a repo checkout beside it
 app.get("/hook.sh", () => new Response(Bun.file(forwarder), { headers: { "content-type": "text/x-shellscript" } }));
+app.get("/hook.ps1", () => new Response(Bun.file(forwarderPs1), { headers: { "content-type": "text/plain" } }));
+app.get("/hook.cmd", () => new Response(Bun.file(forwarderCmd), { headers: { "content-type": "text/plain" } }));
 app.get(
   "/opencode-plugin.js",
   () => new Response(Bun.file(plugin), { headers: { "content-type": "text/javascript" } }),
@@ -52,10 +58,10 @@ const shutdown = () => {
 };
 for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, shutdown);
 // why: the desktop app's stdin pipe closes however the app ends (crash or kill included), so the sidecar never outlives it
-if (process.env.AGENT_MAP_EXIT_WITH_STDIN === "1") {
+if (process.env.RANCHER_EXIT_WITH_STDIN === "1") {
   process.stdin.on("end", shutdown).on("close", shutdown).resume();
 }
 
-console.log(`agent-map bridge on http://${env.HOST}:${env.BRIDGE_PORT}`);
+console.log(`rancher bridge on http://${env.HOST}:${env.BRIDGE_PORT}`);
 
 export default { port: env.BRIDGE_PORT, hostname: env.HOST, fetch: app.fetch };

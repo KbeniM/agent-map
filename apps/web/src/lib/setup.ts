@@ -2,16 +2,29 @@ export type Snippet = { title: string; file?: string; content: string };
 type Context = { url: string; secured: boolean };
 
 const json = (value: unknown) => JSON.stringify(value, null, 2);
-const hook = (adapter: string, event?: string) => `agent-map-hook ${adapter}${event ? ` ${event}` : ""}`;
+const isWindows = () => typeof navigator !== "undefined" && /windows/i.test(navigator.userAgent);
+const hook = (adapter: string, event?: string) => `rancher-hook ${adapter}${event ? ` ${event}` : ""}`;
 
-const installForwarder = ({ url, secured }: Context): Snippet => ({
-  title: "Install the forwarder, then export the bridge address",
-  content: [
-    `curl -fsSL ${url}/hook.sh -o ~/.local/bin/agent-map-hook && chmod +x ~/.local/bin/agent-map-hook`,
-    `export AGENT_MAP_URL=${url}`,
-    ...(secured ? ["export AGENT_MAP_TOKEN=<token>"] : []),
-  ].join("\n"),
-});
+const installForwarder = ({ url, secured }: Context): Snippet =>
+  isWindows()
+    ? {
+        title: "Install the Windows forwarder in PowerShell (in a folder on PATH)",
+        content: [
+          `New-Item -ItemType Directory -Force "$HOME\\.local\\bin" | Out-Null`,
+          `irm ${url}/hook.ps1 -OutFile "$HOME\\.local\\bin\\rancher-hook.ps1"`,
+          `irm ${url}/hook.cmd -OutFile "$HOME\\.local\\bin\\rancher-hook.cmd"`,
+          `[Environment]::SetEnvironmentVariable("RANCHER_URL", "${url}", "User")`,
+          ...(secured ? [`[Environment]::SetEnvironmentVariable("RANCHER_TOKEN", "<token>", "User")`] : []),
+        ].join("\n"),
+      }
+    : {
+        title: "Install the forwarder, then export the bridge address",
+        content: [
+          `curl -fsSL ${url}/hook.sh -o ~/.local/bin/rancher-hook && chmod +x ~/.local/bin/rancher-hook`,
+          `export RANCHER_URL=${url}`,
+          ...(secured ? ["export RANCHER_TOKEN=<token>"] : []),
+        ].join("\n"),
+      };
 
 const CLAUDE_EVENTS = [
   "SessionStart",
@@ -30,7 +43,7 @@ function claudeHttpHooks({ url, secured }: Context) {
     type: "http",
     url: `${url}/v1/hooks/claude-code`,
     timeout: 5,
-    ...(secured ? { headers: { Authorization: "Bearer $AGENT_MAP_TOKEN" }, allowedEnvVars: ["AGENT_MAP_TOKEN"] } : {}),
+    ...(secured ? { headers: { Authorization: "Bearer $RANCHER_TOKEN" }, allowedEnvVars: ["RANCHER_TOKEN"] } : {}),
   };
   return json({ hooks: Object.fromEntries(CLAUDE_EVENTS.map((event) => [event, [{ hooks: [handler] }]])) });
 }
@@ -40,6 +53,12 @@ const commandHooks = (adapter: string, events: string[], shape: (command: string
 
 // why: each harness has its own hook file format; these follow each vendor's documented shape
 export const SETUP: Record<string, (context: Context) => Snippet[]> = {
+  t3: () => [
+    {
+      title: "Nothing to set up on this machine: the bridge reads ~/.t3/userdata/statev2.sqlite for all T3 providers.",
+      content: "",
+    },
+  ],
   "claude-code": (context) => [
     {
       title:
@@ -49,7 +68,7 @@ export const SETUP: Record<string, (context: Context) => Snippet[]> = {
     },
     {
       title:
-        "Cloud sessions also need the bridge host allowed in the environment's network settings, and the token as AGENT_MAP_TOKEN",
+        "Cloud sessions also need the bridge host allowed in the environment's network settings, and the token as RANCHER_TOKEN",
       content: `Network: allow ${new URL(context.url).host}`,
     },
   ],
@@ -77,6 +96,10 @@ export const SETUP: Record<string, (context: Context) => Snippet[]> = {
     },
   ],
   cursor: (context) => [
+    {
+      title: "Sessions on this machine need nothing: the bridge reads ~/.cursor/projects. For live hooks, add:",
+      content: "",
+    },
     installForwarder(context),
     {
       title: "Cursor hooks",
@@ -102,10 +125,14 @@ export const SETUP: Record<string, (context: Context) => Snippet[]> = {
     },
   ],
   "copilot-cli": (context) => [
+    {
+      title: "Sessions on this machine need nothing: the bridge reads ~/.copilot/session-state. For live hooks, add:",
+      content: "",
+    },
     installForwarder(context),
     {
       title: "Copilot CLI hooks",
-      file: "~/.copilot/hooks/agent-map.json",
+      file: "~/.copilot/hooks/rancher.json",
       content: json({
         version: 1,
         hooks: Object.fromEntries(
@@ -141,7 +168,7 @@ export const SETUP: Record<string, (context: Context) => Snippet[]> = {
     installForwarder(context),
     {
       title: "Grok Build hooks",
-      file: "~/.grok/hooks/agent-map.json",
+      file: "~/.grok/hooks/rancher.json",
       content: json({
         hooks: commandHooks(
           "grok",
@@ -162,12 +189,17 @@ export const SETUP: Record<string, (context: Context) => Snippet[]> = {
     },
   ],
   antigravity: (context) => [
+    {
+      title:
+        "Sessions on this machine need nothing: the bridge reads ~/.gemini/antigravity/brain. For live hooks, add:",
+      content: "",
+    },
     installForwarder(context),
     {
       title: "Antigravity hooks",
       file: "~/.gemini/config/hooks.json",
       content: json({
-        "agent-map": Object.fromEntries(
+        rancher: Object.fromEntries(
           ["SessionStart", "PreInvocation", "PreToolUse", "PostToolUse", "Stop"].map((event) => [
             event,
             [{ command: hook("antigravity", event) }],
@@ -177,14 +209,24 @@ export const SETUP: Record<string, (context: Context) => Snippet[]> = {
     },
   ],
   opencode: ({ url, secured }) => [
-    {
-      title: "Install the plugin, then export the bridge address before starting OpenCode",
-      content: [
-        `curl -fsSL ${url}/opencode-plugin.js -o ~/.config/opencode/plugins/agent-map.js`,
-        `export AGENT_MAP_URL=${url}`,
-        ...(secured ? ["export AGENT_MAP_TOKEN=<token>"] : []),
-      ].join("\n"),
-    },
+    isWindows()
+      ? {
+          title: "Install the plugin in PowerShell, then set RANCHER_URL before starting OpenCode",
+          content: [
+            `New-Item -ItemType Directory -Force "$HOME\\.config\\opencode\\plugins" | Out-Null`,
+            `irm ${url}/opencode-plugin.js -OutFile "$HOME\\.config\\opencode\\plugins\\rancher.js"`,
+            `$env:RANCHER_URL="${url}"`,
+            ...(secured ? [`$env:RANCHER_TOKEN="<token>"`] : []),
+          ].join("\n"),
+        }
+      : {
+          title: "Install the plugin, then export the bridge address before starting OpenCode",
+          content: [
+            `curl -fsSL ${url}/opencode-plugin.js -o ~/.config/opencode/plugins/rancher.js`,
+            `export RANCHER_URL=${url}`,
+            ...(secured ? ["export RANCHER_TOKEN=<token>"] : []),
+          ].join("\n"),
+        },
   ],
   cline: (context) => [
     installForwarder(context),

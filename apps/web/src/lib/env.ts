@@ -1,7 +1,6 @@
 const hasWindow = typeof window !== "undefined";
-// why: inside the desktop app the page is served by Tauri, so the bridge is the sidecar on loopback, not the page origin
-const insideTauri = hasWindow && "__TAURI_INTERNALS__" in window;
+// why: in Tauri or Vite dev without VITE_BRIDGE_URL, the bridge listens on :4000 rather than the page origin
+const separateBridge = (hasWindow && "__TAURI_INTERNALS__" in window) || import.meta.env.DEV || !hasWindow;
 
 export const DEFAULT_BRIDGE_URL =
-  import.meta.env.VITE_BRIDGE_URL ||
-  (insideTauri ? "http://127.0.0.1:4000" : hasWindow ? window.location.origin : "http://127.0.0.1:4000");
+  import.meta.env.VITE_BRIDGE_URL || (separateBridge ? "http://127.0.0.1:4000" : window.location.origin);

@@ -4,7 +4,7 @@
 
 ```mermaid
 graph LR
-    Files["Transcripts (Claude Code, Codex)"] -->|poll, parse| Adapter["Harness adapter (apps/api/src/harness)"]
+    Files["Transcripts & local stores (T3 Code, Claude Code, Codex, Cursor, Copilot, Antigravity)"] -->|poll, parse| Adapter["Harness adapter (apps/api/src/harness)"]
     Hooks["Hooks and plugins (Cursor, Copilot, Gemini, Grok, Antigravity, OpenCode, Cline, Windsurf, cloud Claude Code)"] -->|POST /v1/hooks/:adapter| Adapter
     Other["Any harness"] -->|POST /v1/events| Bridge
     Adapter --> Bridge["Bridge: SQLite event store (apps/api)"]
@@ -22,7 +22,7 @@ graph LR
 
 Bun workspaces monorepo:
 ```
-agent-map/
+rancher/
 ├── apps/
 │   ├── web/        # Vite + React, TanStack Router and Query, Zustand, Tailwind 4, shadcn (src/, tests/)
 │   ├── api/        # Bun + Hono bridge: harness adapters, SQLite store, SSE stream (src/, tests/, bin/ forwarder and plugin)
@@ -54,4 +54,4 @@ The main agent of a session has the session's id. An event for an unknown sessio
 1. **One schema.** Every event is defined once in `packages/shared/src/events.ts`. Adapters, the ingest route and the web stream parse with it.
 2. **Web never reads harness files.** `apps/web` reaches harnesses only through the bridge and imports only the bridge's types (`AppType`).
 3. **Adapters own harness formats.** Transcript shapes, file layouts and hook payloads live in `apps/api/src/harness/<harness>.ts` and nowhere else. A file adapter declares globs and `append` or `snapshot` mode; the shared watcher (`files.ts`) does the polling. A hook adapter parses its payload with Zod and throws `InvalidPayload` on a foreign shape.
-4. **The reducer is pure.** `apply` returns a new graph and never mutates its input, so Zustand and React see every change.
+4. **The reducer is pure.** `apply` returns a new graph and never mutates its input, so Zustand and React see every change. Tools are keyed by session (`graph.tools[sessionId][toolId]`, read with `toolOf`), so an event copies only its own session's tools and untouched sessions keep their references.

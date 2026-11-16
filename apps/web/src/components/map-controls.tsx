@@ -1,7 +1,21 @@
-import { ComputerIcon, Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
+import {
+  ComputerIcon,
+  MaximizeScreenIcon,
+  Moon02Icon,
+  PauseIcon,
+  PlayIcon,
+  RefreshIcon,
+  Sun03Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { cn } from "cn";
+import { useNavigate } from "@tanstack/react-router";
+import { Fragment, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { Separator } from "@/components/ui/separator";
+import { Toggle } from "@/components/ui/toggle";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useMapStore } from "@/stores/map";
 import { type Theme, usePreferences, type View } from "@/stores/preferences";
 
 const THEMES: Record<Theme, { next: Theme; icon: typeof Sun03Icon; label: string }> = {
@@ -12,47 +26,109 @@ const THEMES: Record<Theme, { next: Theme; icon: typeof Sun03Icon; label: string
 
 const VIEWS: View[] = ["2d", "3d"];
 
+const isTyping = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT"
+  );
+};
+
 export function MapControls() {
   const { theme, view, setTheme, setView } = usePreferences();
+  const { paused, togglePause, fit, reheat } = useMapStore();
+  const navigate = useNavigate();
   const { next, icon, label } = THEMES[theme];
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
+      if (event.key === "f" || event.key === "F") {
+        event.preventDefault();
+        fit();
+      } else if (event.code === "Space") {
+        // why: avoid hijacking spacebar activation on focused buttons or switches
+        if (document.activeElement instanceof HTMLButtonElement) return;
+        event.preventDefault();
+        togglePause();
+      } else if (event.key === "Escape") {
+        void navigate({ to: "/", search: {} });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [fit, togglePause, navigate]);
+
   return (
-    <div className="surface absolute top-4 right-4 flex h-11 items-center gap-1.5 rounded-2xl px-1.5 pointer-coarse:h-13">
-      <fieldset
-        className="relative flex h-8 rounded-lg border border-border/60 bg-secondary/80 p-0.5 pointer-coarse:h-11"
-        aria-label="View"
-      >
-        <span
-          aria-hidden
-          className={cn(
-            "absolute inset-y-0.5 left-0.5 w-10 rounded-md bg-elevated shadow-xs ring-1 ring-border/60 transition-transform duration-200 ease-[var(--ease-drawer)]",
-            view === "3d" && "translate-x-10",
-          )}
-        />
-        {VIEWS.map((option) => (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={view === option}
-            onClick={() => setView(option)}
-            className={cn(
-              "type-caption relative w-10 rounded-md font-semibold uppercase transition-[color,scale] duration-150 ease-out active:scale-[0.96]",
-              view === option ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
+    <div className="surface absolute top-0 right-0 z-10 flex h-10 items-stretch border-t-0 border-r-0 pointer-coarse:h-11">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-full w-10" aria-label="Fit graph" onClick={fit}>
+            <HugeiconsIcon icon={MaximizeScreenIcon} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Fit graph (F)</TooltipContent>
+      </Tooltip>
+      <Separator orientation="vertical" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-full w-10" aria-label="Reset layout" onClick={reheat}>
+            <HugeiconsIcon icon={RefreshIcon} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Reset layout</TooltipContent>
+      </Tooltip>
+      <Separator orientation="vertical" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-full w-10"
+            aria-label={paused ? "Resume physics" : "Pause physics"}
+            aria-pressed={paused}
+            onClick={togglePause}
           >
-            {option}
-          </button>
+            <HugeiconsIcon icon={paused ? PlayIcon : PauseIcon} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{paused ? "Resume physics (Space)" : "Pause physics (Space)"}</TooltipContent>
+      </Tooltip>
+      <Separator orientation="vertical" />
+      <ButtonGroup aria-label="View" className="items-stretch">
+        {VIEWS.map((option, index) => (
+          <Fragment key={option}>
+            {index > 0 && <Separator orientation="vertical" />}
+            <Toggle
+              variant="default"
+              className="h-full px-4"
+              pressed={view === option}
+              onPressedChange={(pressed) => {
+                if (pressed) setView(option);
+              }}
+            >
+              {option}
+            </Toggle>
+          </Fragment>
         ))}
-      </fieldset>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`Theme: ${label}`}
-        title={`Theme: ${label}`}
-        onClick={() => setTheme(next)}
-      >
-        <HugeiconsIcon key={theme} icon={icon} className="animate-in fade-in spin-in-45 duration-300" />
-      </Button>
+      </ButtonGroup>
+      <Separator orientation="vertical" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-full w-10"
+            aria-label={`Theme: ${label}`}
+            onClick={() => setTheme(next)}
+          >
+            <HugeiconsIcon key={theme} icon={icon} className="animate-in fade-in spin-in-45 duration-300" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Theme: {label}</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

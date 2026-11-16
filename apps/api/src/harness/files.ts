@@ -1,9 +1,9 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
-import type { AgentEvent } from "@agent-map/shared/events";
+import type { AgentEvent } from "@rancher/shared/events";
 import type { Emit, FileSource } from "./adapter";
 
-type Tracked = { state: unknown; offset: number; mtime: number };
+type Tracked = { state: unknown; offset: number; stamp: string };
 
 export type FileWatcher = {
   status: () => { sessions: number; lastEventAt?: string; error?: string };
@@ -36,19 +36,26 @@ export function watchFiles(
   async function read(relative: string) {
     const path = join(root, relative);
     const info = await stat(path);
+    const wal = source.mode === "snapshot" ? await stat(`${path}-wal`).catch(() => undefined) : undefined;
+    const latestMtime = Math.max(info.mtimeMs, wal?.mtimeMs ?? 0);
     let file = files.get(path);
     if (!file) {
-      if (info.mtimeMs < cutoff) return;
-      const opened = await source.open(relative.replaceAll("\\", "/"), path, info.mtime);
+      if (latestMtime < cutoff) return;
+      const opened = await source.open(relative.replaceAll("\\", "/"), path, new Date(latestMtime), sinceHours);
       if (!opened) return;
-      file = { state: opened.state, offset: 0, mtime: 0 };
+      file = { state: opened.state, offset: 0, stamp: "" };
       files.set(path, file);
       send(opened.events ?? []);
     }
     if (source.mode === "snapshot") {
-      if (info.mtimeMs === file.mtime) return;
-      file.mtime = info.mtimeMs;
-      send(source.parse(await Bun.file(path).text(), file.state));
+      // why: SQLite WAL writes update the -wal companion file without changing the main database file's mtime
+      const stamp = `${info.mtimeMs}:${info.size}:${wal ? `${wal.mtimeMs}:${wal.size}` : ""}`;
+      if (stamp === file.stamp) return;
+      file.stamp = stamp;
+      const events = source.read
+        ? await source.read(path, file.state)
+        : (source.parse?.(await Bun.file(path).text(), file.state) ?? []);
+      send(events);
       return;
     }
     if (info.size <= file.offset) return;
@@ -57,7 +64,7 @@ export function watchFiles(
     // why: a line still being written has no trailing newline yet, so it waits for the next poll
     if (end === 0) return;
     file.offset += end;
-    send(source.parse(new TextDecoder().decode(bytes.subarray(0, end)), file.state));
+    send(source.parse?.(new TextDecoder().decode(bytes.subarray(0, end)), file.state) ?? []);
   }
 
   async function tick() {

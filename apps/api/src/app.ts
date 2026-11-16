@@ -1,6 +1,6 @@
-import { bridgeSettingsPatchSchema } from "@agent-map/shared/config";
-import { ingestSchema } from "@agent-map/shared/events";
 import { zValidator } from "@hono/zod-validator";
+import { bridgeSettingsPatchSchema } from "@rancher/shared/config";
+import { ingestSchema } from "@rancher/shared/events";
 import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
 import { bodyLimit } from "hono/body-limit";

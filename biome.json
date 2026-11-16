@@ -56,8 +56,23 @@
       "includes": ["apps/web/src/components/ui/**"],
       "linter": {
         "rules": {
+          "a11y": {
+            "noNoninteractiveTabindex": "off",
+            "noRedundantRoles": "off",
+            "useFocusableInteractive": "off",
+            "useKeyWithClickEvents": "off"
+          },
+          "correctness": {
+            "noComponentHookFactories": "off",
+            "useExhaustiveDependencies": "off"
+          },
+          "security": {
+            "noDangerouslySetInnerHtml": "off"
+          },
           "suspicious": {
-            "noArrayIndexKey": "off"
+            "noArrayIndexKey": "off",
+            "noDocumentCookie": "off",
+            "noDoubleEquals": "off"
           }
         }
       }
