@@ -1,9 +1,13 @@
 import { Database } from "bun:sqlite";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentEvent } from "@rancher/shared/events";
 import { asc, countDistinct, eq, gt, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
+import initial from "../../drizzle/0000_lyrical_ken_ellis.sql" with { type: "text" };
+import journal from "../../drizzle/meta/_journal.json";
 import * as schema from "./schema";
 
 // why: the body stays the stored JSON string, so the stream sends it without parsing and stringifying again
@@ -12,7 +16,22 @@ export type Notice = { type: "events"; entries: Entry[] } | { type: "forget"; se
 type Listener = (notice: Notice) => void;
 
 const PAGE = 2000;
-const MIGRATIONS = join(import.meta.dir, "../../drizzle");
+
+// why: drizzle's migrator reads a folder from disk, which does not exist inside the compiled desktop sidecar; the SQL is embedded and written out first
+// shortcut: each new migration needs an import and a row here, upgrade when a second one lands
+const SQL: Record<string, string> = { "0000_lyrical_ken_ellis": initial };
+
+function migrationsFolder() {
+  const folder = mkdtempSync(join(tmpdir(), "rancher-migrations-"));
+  mkdirSync(join(folder, "meta"));
+  writeFileSync(join(folder, "meta/_journal.json"), JSON.stringify(journal));
+  for (const entry of journal.entries) {
+    const query = SQL[entry.tag];
+    if (query === undefined) throw new Error(`migration ${entry.tag} is not embedded in store.ts`);
+    writeFileSync(join(folder, `${entry.tag}.sql`), query);
+  }
+  return folder;
+}
 
 // why: transcripts are re-read after every restart, so an identical event must land only once
 const keyOf = (body: string) => Bun.hash(body).toString(36);
@@ -24,7 +43,12 @@ export function createStore(path: string) {
   sqlite.run("PRAGMA synchronous = NORMAL");
 
   const db = drizzle({ client: sqlite, schema });
-  migrate(db, { migrationsFolder: MIGRATIONS });
+  const folder = migrationsFolder();
+  try {
+    migrate(db, { migrationsFolder: folder });
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
   db.insert(schema.meta)
     .values({ name: "id", value: crypto.randomUUID().slice(0, 8) })
     .onConflictDoNothing()

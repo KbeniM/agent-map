@@ -6,7 +6,7 @@
   "scripts": {
     "sidecar": "bun ../../scripts/sidecar.ts",
     "dev": "bun run sidecar && tauri dev",
-    "build": "bun run sidecar && tauri build",
+    "build": "bun run sidecar && tauri build && bun ../../scripts/rename-installer.ts",
     "tauri": "tauri"
   },
   "devDependencies": {
